@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package logplat.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Longhodac/log-plat/gen/logplat/v1;logplatv1";
+
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_TRACE = 1;
+  LEVEL_DEBUG = 2;
+  LEVEL_INFO = 3;
+  LEVEL_WARN = 4;
+  LEVEL_ERROR = 5;
+  LEVEL_FATAL = 6;
+}
+
+// LogEntry is the unit that flows through every stage: agent spool, gRPC,
+// Kafka record value, and (as JSON) the OpenSearch document.
+message LogEntry {
+  // Deterministic 32-hex-char ID derived from (agent_id, source, epoch, offset).
+  // Re-reading the same bytes yields the same ID, which is what makes every
+  // downstream retry idempotent. See docs/design.md.
+  string id = 1;
+  // Set by the collector from the authenticated API key. Agents cannot choose it.
+  string service = 2;
+  // Event time parsed from the line, or observed_at when parsing fails.
+  google.protobuf.Timestamp timestamp = 3;
+  // When the agent read the line. Used for end-to-end latency.
+  google.protobuf.Timestamp observed_at = 4;
+  Level level = 5;
+  string message = 6;
+  string host = 7;
+  string agent_id = 8;
+  // Path of the tailed file as the agent sees it.
+  string source = 9;
+  // Byte offset of the line's first byte within the source file.
+  int64 offset = 10;
+  // Incremented by the agent each time the source is truncated or replaced.
+  uint32 epoch = 11;
+}
+
+message IngestRequest {
+  // Agent-local sequence number, echoed back in the ack.
+  uint64 seq = 1;
+  repeated LogEntry entries = 2;
+}
+
+message Rejection {
+  string id = 1;
+  string reason = 2;
+}
+
+// IngestResponse acks one IngestRequest. It is sent only after Kafka has
+// acknowledged (acks=all) every accepted entry in the batch. Rejected entries
+// are permanently invalid and must not be retried.
+message IngestResponse {
+  uint64 seq = 1;
+  uint32 accepted = 2;
+  repeated Rejection rejected = 3;
+}
+
+service IngestService {
+  // Agents stream batches; the collector streams one ack per batch, in the
+  // order the batches arrived.
+  rpc Ingest(stream IngestRequest) returns (stream IngestResponse);
+}

@@ -1,0 +1,29 @@
+version: "2"
+run:
+  build-tags: [integration]
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+  settings:
+    gosec:
+      excludes:
+        - G104 # unchecked errors are covered by errcheck
+        - G304 # file paths come from operator config, by design
+        - G115 # integer conversions are bounded by validation upstream
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    presets: [std-error-handling]
+    paths: [gen/]
+formatters:
+  enable: [gofmt, goimports]
+  exclusions:
+    paths: [gen/]

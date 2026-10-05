@@ -1,0 +1,45 @@
+# Prometheus counters during the 1,000,000-line run, 5s steps (UTC 22:34:30 to 22:35:20)
+$ curl localhost:9090/api/v1/query_range query='sum(logplat_collector_entries_total{result="published"})' step=5
+22:34:30 502000
+22:34:35 502000
+22:34:40 502000
+22:34:45 1502000
+22:34:50 1502000
+22:34:55 1502000
+22:35:00 1502000
+22:35:05 1502000
+22:35:10 1502000
+22:35:15 1502000
+22:35:20 1502000
+$ curl localhost:9090/api/v1/query_range query='sum(logplat_indexer_records_total{result="indexed"})' step=5
+22:34:30 502000
+22:34:35 502000
+22:34:40 531571
+22:34:45 744720
+22:34:50 954494
+22:34:55 1152545
+22:35:00 1336538
+22:35:05 1502000
+22:35:10 1502000
+22:35:15 1502000
+22:35:20 1502000
+$ curl localhost:9090/api/v1/query_range query='sum(logplat_indexer_consumer_lag)' step=5
+22:34:30 0
+22:34:35 0
+22:34:40 0
+22:34:45 0
+22:34:50 632833
+22:34:55 632833
+22:35:00 246965
+22:35:05 246965
+22:35:10 0
+22:35:15 0
+22:35:20 0
+# error counters and bulk latency at 22:35:52Z (cumulative since stack start, covers all six runs)
+logplat_collector_publish_errors_total = 0
+logplat_agent_stream_errors_total = 0
+logplat_agent_entries_rejected_total = 0
+logplat_indexer_bulk_retries_total = 0
+logplat_indexer_commit_errors_total = 0
+histogram_quantile(0.5, sum by (le)(rate(logplat_indexer_bulk_seconds_bucket[5m]))) = 0.08786885245901639
+histogram_quantile(0.99, sum by (le)(rate(logplat_indexer_bulk_seconds_bucket[5m]))) = 0.2456094117647057

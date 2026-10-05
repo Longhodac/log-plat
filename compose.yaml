@@ -1,0 +1,145 @@
+# Local development stack. Every image is multi-arch (amd64 and arm64).
+# Credentials and disabled security below are for local use only.
+name: logplat
+
+x-go-service: &go-service
+  restart: unless-stopped
+  stop_grace_period: 30s
+
+services:
+  kafka:
+    image: apache/kafka:4.3.1
+    hostname: kafka
+    ports:
+      - "9094:9094"
+    environment:
+      CLUSTER_ID: logplat-local-cluster01
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  opensearch:
+    image: opensearchproject/opensearch:3.9.0
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+
+  redis:
+    image: redis:8.2-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  collector:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: collector } }
+    image: logplat/collector:dev
+    depends_on:
+      kafka: { condition: service_healthy }
+    ports:
+      - "7070:7070"
+      - "9101:9100"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      COLLECTOR_API_KEYS: ${COLLECTOR_API_KEYS:-dev-agent-key:hdfs}
+
+  indexer:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: indexer } }
+    image: logplat/indexer:dev
+    depends_on:
+      kafka: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+    ports:
+      - "9102:9100"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      OPENSEARCH_ADDRS: http://opensearch:9200
+
+  agent:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: agent } }
+    image: logplat/agent:dev
+    depends_on: [collector]
+    ports:
+      - "9103:9100"
+    environment:
+      AGENT_ID: agent-1
+      AGENT_PATHS: /var/log/ingest/*.log
+      COLLECTOR_ADDR: collector:7070
+      AGENT_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+    volumes:
+      - ./data/run:/var/log/ingest:ro
+      - agent-state:/var/lib/logplat-agent
+
+  query-api:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: queryapi } }
+    image: logplat/queryapi:dev
+    depends_on:
+      opensearch: { condition: service_healthy }
+    ports:
+      - "8080:8080"
+    environment:
+      OPENSEARCH_ADDRS: http://opensearch:9200
+      QUERY_API_KEYS: ${QUERY_API_KEYS:-dev-query-key:ops}
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    depends_on: [prometheus]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+volumes:
+  kafka-data:
+  opensearch-data:
+  agent-state:

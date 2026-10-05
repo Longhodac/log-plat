@@ -1,0 +1,303 @@
+{
+  "uid": "logplat-pipeline",
+  "title": "Log Platform Pipeline",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "refresh": "5s",
+  "tags": [
+    "logplat"
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Ingest throughput (lines/s)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(logplat_agent_lines_read_total[1m]))",
+          "legendFormat": "agent read"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(logplat_collector_entries_total{result=\"published\"}[1m]))",
+          "legendFormat": "collector published to Kafka"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(logplat_indexer_records_total{result=\"indexed\"}[1m]))",
+          "legendFormat": "indexer indexed"
+        }
+      ],
+      "id": 1
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors (per second)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(logplat_collector_entries_total{result=\"rejected\"}[1m]))",
+          "legendFormat": "collector rejected"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(logplat_collector_publish_errors_total[1m])",
+          "legendFormat": "collector publish errors"
+        },
+        {
+          "refId": "C",
+          "expr": "rate(logplat_collector_auth_failures_total[1m])",
+          "legendFormat": "collector auth failures"
+        },
+        {
+          "refId": "D",
+          "expr": "rate(logplat_agent_stream_errors_total[1m])",
+          "legendFormat": "agent stream errors"
+        },
+        {
+          "refId": "E",
+          "expr": "rate(logplat_indexer_bulk_retries_total[1m])",
+          "legendFormat": "indexer bulk retries"
+        },
+        {
+          "refId": "F",
+          "expr": "sum(rate(logplat_indexer_records_total{result=\"dead_lettered\"}[1m]))",
+          "legendFormat": "indexer dead-lettered"
+        }
+      ],
+      "id": 2
+    },
+    {
+      "type": "timeseries",
+      "title": "Pipeline latency p50 / p99",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_agent_ack_seconds_bucket[1m])))",
+          "legendFormat": "agent ack p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_agent_ack_seconds_bucket[1m])))",
+          "legendFormat": "agent ack p99"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_collector_publish_seconds_bucket[1m])))",
+          "legendFormat": "kafka publish p99"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_indexer_bulk_seconds_bucket[1m])))",
+          "legendFormat": "opensearch bulk p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_indexer_end_to_end_seconds_bucket[1m])))",
+          "legendFormat": "end-to-end p50"
+        },
+        {
+          "refId": "F",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_indexer_end_to_end_seconds_bucket[1m])))",
+          "legendFormat": "end-to-end p99"
+        }
+      ],
+      "id": 3
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka consumer lag (records)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (partition) (logplat_indexer_consumer_lag)",
+          "legendFormat": "partition {{partition}}"
+        }
+      ],
+      "id": 4
+    },
+    {
+      "type": "timeseries",
+      "title": "Agent spool size",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "logplat_agent_spool_bytes",
+          "legendFormat": "spool bytes"
+        }
+      ],
+      "id": 5
+    },
+    {
+      "type": "timeseries",
+      "title": "Query API",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (code) (rate(logplat_query_requests_total[1m]))",
+          "legendFormat": "HTTP {{code}} /s"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_query_request_seconds_bucket[1m])))",
+          "legendFormat": "p99 latency (s)"
+        }
+      ],
+      "id": 6
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+# command: make bench
+# commit: none
+?   	github.com/Longhodac/log-plat/cmd/agent	[no test files]
+?   	github.com/Longhodac/log-plat/cmd/collector	[no test files]
+?   	github.com/Longhodac/log-plat/cmd/indexer	[no test files]
+?   	github.com/Longhodac/log-plat/cmd/loggen	[no test files]
+?   	github.com/Longhodac/log-plat/cmd/queryapi	[no test files]
+?   	github.com/Longhodac/log-plat/cmd/zerolosscheck	[no test files]
+?   	github.com/Longhodac/log-plat/gen/logplat/v1	[no test files]
+PASS
+ok  	github.com/Longhodac/log-plat/internal/agent	0.276s
+PASS
+ok  	github.com/Longhodac/log-plat/internal/apikey	0.136s
+PASS
+ok  	github.com/Longhodac/log-plat/internal/backoff	0.137s
+PASS
+ok  	github.com/Longhodac/log-plat/internal/collector	0.206s
+?   	github.com/Longhodac/log-plat/internal/doc	[no test files]
+?   	github.com/Longhodac/log-plat/internal/envcfg	[no test files]
+goos: darwin
+goarch: arm64
+pkg: github.com/Longhodac/log-plat/internal/indexer
+cpu: Apple M5
+BenchmarkEncode-10    	  853408	      1384 ns/op	    2266 B/op	      26 allocs/op
+BenchmarkEncode-10    	  893518	      1338 ns/op	    2266 B/op	      26 allocs/op
+BenchmarkEncode-10    	  901390	      1335 ns/op	    2266 B/op	      26 allocs/op
+BenchmarkEncode-10    	  913330	      1336 ns/op	    2266 B/op	      26 allocs/op
+BenchmarkEncode-10    	  903055	      1405 ns/op	    2266 B/op	      26 allocs/op
+PASS
+ok  	github.com/Longhodac/log-plat/internal/indexer	6.280s
+?   	github.com/Longhodac/log-plat/internal/kafkautil	[no test files]
+goos: darwin
+goarch: arm64
+pkg: github.com/Longhodac/log-plat/internal/lineio
+cpu: Apple M5
+BenchmarkFramerFeed-10    	  279825	      4267 ns/op	15347.84 MB/s	       0 B/op	       0 allocs/op
+BenchmarkFramerFeed-10    	  285244	      4205 ns/op	15576.92 MB/s	       0 B/op	       0 allocs/op
+BenchmarkFramerFeed-10    	  285032	      4208 ns/op	15563.82 MB/s	       0 B/op	       0 allocs/op
+BenchmarkFramerFeed-10    	  284676	      4261 ns/op	15368.91 MB/s	       0 B/op	       0 allocs/op
+BenchmarkFramerFeed-10    	  276565	      4232 ns/op	15474.53 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/Longhodac/log-plat/internal/lineio	6.159s
+PASS
+ok  	github.com/Longhodac/log-plat/internal/loggen	0.175s
+goos: darwin
+goarch: arm64
+pkg: github.com/Longhodac/log-plat/internal/logid
+cpu: Apple M5
+BenchmarkNew-10    	11913692	       100.3 ns/op	      64 B/op	       2 allocs/op
+BenchmarkNew-10    	12194408	        98.48 ns/op	      64 B/op	       2 allocs/op
+BenchmarkNew-10    	12225042	        97.57 ns/op	      64 B/op	       2 allocs/op
+BenchmarkNew-10    	12238107	       100.3 ns/op	      64 B/op	       2 allocs/op
+BenchmarkNew-10    	12155170	        98.02 ns/op	      64 B/op	       2 allocs/op
+PASS
+ok  	github.com/Longhodac/log-plat/internal/logid	6.179s
+?   	github.com/Longhodac/log-plat/internal/obs	[no test files]
+?   	github.com/Longhodac/log-plat/internal/osutil	[no test files]
+PASS
+ok  	github.com/Longhodac/log-plat/internal/query	0.256s
+goos: darwin
+goarch: arm64
+pkg: github.com/Longhodac/log-plat/internal/spool
+cpu: Apple M5
+BenchmarkAppend-10    	     312	   3798147 ns/op	  53.92 MB/s	  213028 B/op	       1 allocs/op
+BenchmarkAppend-10    	     310	   3809980 ns/op	  53.75 MB/s	  213011 B/op	       1 allocs/op
+BenchmarkAppend-10    	     318	   3666901 ns/op	  55.85 MB/s	  213011 B/op	       1 allocs/op
+BenchmarkAppend-10    	     333	   3722736 ns/op	  55.01 MB/s	  213016 B/op	       1 allocs/op
+BenchmarkAppend-10    	     308	   3749639 ns/op	  54.62 MB/s	  213011 B/op	       1 allocs/op
+PASS
+ok  	github.com/Longhodac/log-plat/internal/spool	6.153s
+?   	github.com/Longhodac/log-plat/internal/zeroloss	[no test files]
