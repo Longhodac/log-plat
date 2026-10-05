@@ -6,22 +6,45 @@ A distributed log platform written in Go. Agents tail log files and stream them 
 
 ```mermaid
 flowchart LR
-    subgraph host["Application host"]
-        F[("log files")] --> A["agent<br/>tail, ID, batch"]
-        A <--> S[("disk spool<br/>(WAL)")]
-    end
-    A -- "gRPC bidi stream<br/>x-api-key" --> C["collector<br/>auth, validate"]
-    C -- "acks=all<br/>key = service" --> K[["Kafka<br/>topic: logs"]]
-    C -. "ack after Kafka ack" .-> A
-    K --> I["indexer<br/>consumer group"]
-    I -- "_bulk, _id = log ID" --> O[("OpenSearch<br/>logs-YYYY.MM.DD")]
-    I -- "unparseable or rejected" --> D[["Kafka<br/>topic: logs-dlq"]]
-    I -. "commit offsets after write" .-> K
-    Q["query-api<br/>REST"] --> O
-    U(("user")) --> Q
-    P["Prometheus"] -. scrape .-> A & C & I & Q
-    G["Grafana"] --> P
+    A["agent"] -->|"gRPC"| C["collector"] -->|"acks=all"| K["Kafka"] --> I["indexer"] -->|"_bulk"| O["OpenSearch"] --> Q["query-api"]
+    I -.->|"bad records"| D["dead-letter topic"]
 ```
+
+Each service also exposes Prometheus metrics, and Grafana charts them.
+
+### Life of one batch
+
+The agent deletes a batch only after the collector acks it, and the collector acks only after Kafka does. The indexer commits Kafka offsets only after OpenSearch accepts the writes.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as agent
+    participant S as disk spool
+    participant C as collector
+    participant K as Kafka
+    participant I as indexer
+    participant O as OpenSearch
+    A->>S: append batch, fsync
+    A->>C: send batch (API key)
+    C->>C: validate entries
+    C->>K: publish (acks=all)
+    K-->>C: written
+    C-->>A: ack
+    A->>S: advance cursor, delete old segments
+    K->>I: poll records
+    I->>O: bulk index (_id = log ID)
+    O-->>I: per-item results
+    I->>K: commit offsets
+    Note over A,S: Crash before the ack: the agent resends from the spool
+    Note over I,K: Crash before the commit: Kafka redelivers and the same _id overwrites
+```
+
+| Hop | Proceeds only after | If it fails |
+|---|---|---|
+| agent to collector | The collector acks, which means Kafka confirmed | The agent resends from its spool |
+| collector to Kafka | All in-sync replicas ack | The stream closes and the agent retries |
+| indexer to OpenSearch | The bulk write succeeds | Kafka redelivers, and the same ID overwrites |
 
 | Component | What it does |
 |---|---|
