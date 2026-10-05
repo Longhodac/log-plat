@@ -1,6 +1,6 @@
 # log-plat
 
-A distributed log platform written in Go. Agents tail log files and stream them over gRPC to a collector. The collector publishes to Kafka, an indexer writes to OpenSearch, and a REST API serves search. The pipeline delivers at least once into an idempotent sink, so every line lands in OpenSearch exactly once, even when components crash and retry. A zero-loss checker proves this by comparing the source file against what was indexed.
+A distributed log platform written in Go. Agents tail log files and stream them over gRPC to a collector. The collector publishes to Kafka, an indexer writes to OpenSearch, and a REST API serves search. Each hop delivers at least once, and OpenSearch deduplicates by log ID, so every line is stored exactly once even when components crash and retry. A zero-loss checker verifies this by comparing the IDs in the source file against the IDs in OpenSearch.
 
 ## Architecture
 
@@ -62,7 +62,9 @@ To get the next page, pass the response's `next_cursor` back as `cursor=` with t
 | Prometheus | http://localhost:9090 |
 | OpenSearch | http://localhost:9200 |
 | Collector gRPC | localhost:7070 |
-| Service metrics: collector, indexer, agent | http://localhost:9101/metrics, :9102, :9103 |
+| Collector metrics | http://localhost:9101/metrics |
+| Indexer metrics | http://localhost:9102/metrics |
+| Agent metrics | http://localhost:9103/metrics |
 | Kafka (from the host) | localhost:9094 |
 
 `make down` stops everything and deletes the volumes.
@@ -96,9 +98,9 @@ Phase 4 fills in this section. Until then, [results/](results/) holds the raw ou
 
 ## Roadmap
 
-1. **Core pipeline** (done): agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
-2. **Chaos:** kill the collector, Kafka, and the indexer mid-stream, inject network faults with Toxiproxy, and verify zero loss.
-3. **Redis:** cache repeated queries, and add token-bucket rate limiting per API key at the collector and the query API.
-4. **Benchmarks:** ingest logs/sec, end-to-end latency (p50 and p99), and query latency.
-5. **Features:** live tail over WebSockets or SSE, error-spike alerts to Slack, and the OpenTelemetry demo app as a log source.
-6. **Deployment:** a Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.
+1. **Core pipeline (done).** The agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
+2. **Chaos tests.** Kill the collector, Kafka, and the indexer mid-stream, inject network faults with Toxiproxy, and verify zero loss.
+3. **Redis.** Cache repeated queries, and add token-bucket rate limiting per API key at the collector and the query API.
+4. **Benchmarks.** Measure ingest logs/sec, end-to-end latency (p50 and p99), and query latency.
+5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
+6. **Deployment.** A Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.
