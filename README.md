@@ -1,8 +1,10 @@
 # log-plat
 
-A distributed log platform written in Go. Agents tail log files and stream them over gRPC to a collector. The collector publishes to Kafka, an indexer writes to OpenSearch, and a REST API serves search. Each hop delivers at least once, and OpenSearch deduplicates by log ID, so every line is stored exactly once even when components crash and retry. A zero-loss checker verifies this by comparing the IDs in the source file against the IDs in OpenSearch.
+A log pipeline in Go. Agents tail log files and send them to a collector over gRPC. The collector writes to Kafka, an indexer moves the logs from Kafka into OpenSearch, and a small REST API lets you search them.
 
-## Architecture
+The goal was to never lose a log line, even when something crashes mid-stream. Every hop is allowed to retry and send duplicates. OpenSearch throws the duplicates away because each document's ID comes from the line's position in its file. To check that this works, a separate tool reads the original file and confirms every line made it into OpenSearch.
+
+## How it fits together
 
 ```mermaid
 flowchart LR
@@ -10,56 +12,48 @@ flowchart LR
     I -.->|"bad records"| D["dead-letter topic"]
 ```
 
-Each service also exposes Prometheus metrics, and Grafana charts them.
+Every service also exposes Prometheus metrics, and there's a Grafana dashboard for them.
 
-### Life of one batch
+The pipeline has two handoffs where a crash could lose data. Each one has a rule about when the sender may forget a batch.
 
-The agent deletes a batch only after the collector acks it, and the collector acks only after Kafka does. The indexer commits Kafka offsets only after OpenSearch accepts the writes.
+**Getting a line into Kafka.** The agent writes each batch to disk before sending it, and deletes the batch only after the collector acks it. The collector acks only after Kafka has confirmed the write.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant A as agent
-    participant S as disk spool
-    participant C as collector
-    participant K as Kafka
-    participant I as indexer
-    participant O as OpenSearch
-    A->>S: append batch, fsync
-    A->>C: send batch (API key)
-    C->>C: validate entries
-    C->>K: publish (acks=all)
-    K-->>C: written
-    C-->>A: ack
-    A->>S: advance cursor, delete old segments
-    K->>I: poll records
-    I->>O: bulk index (_id = log ID)
-    O-->>I: per-item results
-    I->>K: commit offsets
-    Note over A,S: Crash before the ack: the agent resends from the spool
-    Note over I,K: Crash before the commit: Kafka redelivers and the same _id overwrites
+flowchart LR
+    L["read a<br/>log line"] --> B["batch lines,<br/>give each an ID"] --> W["write batch to<br/>disk spool (fsync)"] --> S["send to<br/>collector"] --> P["collector publishes<br/>to Kafka, all replicas<br/>must confirm"] --> A["collector<br/>acks agent"] --> D["agent deletes<br/>batch from spool"]
+    S -.->|"no ack: resend"| S
+    classDef safe fill:#e6f4ea,stroke:#2e7d32
+    class A,D safe
 ```
 
-| Hop | Proceeds only after | If it fails |
-|---|---|---|
-| agent to collector | The collector acks, which means Kafka confirmed | The agent resends from its spool |
-| collector to Kafka | All in-sync replicas ack | The stream closes and the agent retries |
-| indexer to OpenSearch | The bulk write succeeds | Kafka redelivers, and the same ID overwrites |
+**Getting it into OpenSearch.** The indexer saves its place in Kafka only after OpenSearch has accepted the writes. If it crashes first, Kafka hands the same records over again, and the same document IDs overwrite the earlier copies.
+
+```mermaid
+flowchart LR
+    K["Kafka"] --> POLL["indexer polls<br/>a batch of records"] --> BULK["bulk write to OpenSearch<br/>document ID = log ID"] --> COMMIT["indexer commits<br/>Kafka offsets"]
+    BULK -.->|"failed items: retry"| BULK
+    POLL -.->|"unreadable record"| DLQ["dead-letter topic"]
+    COMMIT -.->|"crash before commit: Kafka redelivers,<br/>same ID overwrites the document"| POLL
+    classDef safe fill:#e6f4ea,stroke:#2e7d32
+    class COMMIT safe
+```
+
+In both diagrams, the green boxes are the points where the sender is finally allowed to let go of a batch.
 
 | Component | What it does |
 |---|---|
-| `agent` | Tails files matching globs. It gives each line a deterministic ID derived from its file position, batches lines, and fsyncs each batch to a disk spool before sending it. It deletes a batch only after the collector acks it. It reconnects with exponential backoff and full jitter. |
-| `collector` | gRPC server. It authenticates API keys, stamps the key's service on each entry, and validates entries. It publishes to Kafka partitioned by service, and acks the agent only after Kafka acks. |
-| `indexer` | Kafka consumer group. It bulk-indexes into daily indices using the log ID as the document `_id`, retries transient failures per item, and dead-letters bad records. It commits offsets only after the writes succeed. |
-| `query-api` | `GET /v1/logs` with time range, service, level, and full-text filters. It uses cursor (keyset) pagination, returns structured errors, and serves `/healthz` and `/readyz`. |
-| `loggen` | Replays a log file into another file at a configurable rate, for the agent to tail. |
-| `zerolosscheck` | Recomputes every expected ID from the source file and verifies each one is in OpenSearch. |
+| `agent` | Tails files that match your globs. Each line gets an ID built from its file position. Batches go to a disk spool before they're sent. If the collector is down, the agent reconnects with exponential backoff and jitter. |
+| `collector` | gRPC server. Checks the API key, stamps the key's service name on every entry, and rejects invalid entries. Publishes to Kafka, partitioned by service. |
+| `indexer` | Kafka consumer group. Bulk-indexes into daily indices, retries failed items, and sends records it can't parse to a dead-letter topic. |
+| `query-api` | `GET /v1/logs` with filters for time range, service, level, and text. Uses cursor pagination, returns structured errors, and has `/healthz` and `/readyz`. |
+| `loggen` | Replays a log file into another file at a rate you choose, so the agent has something to tail. |
+| `zerolosscheck` | Works out the ID of every line in the source file and checks that each one is in OpenSearch. |
 
-[docs/design.md](docs/design.md) explains the reasoning behind each design choice, especially delivery guarantees, idempotency, and offset handling.
+If you want the reasoning behind these choices, especially the delivery guarantees, idempotency, and offset handling, it's in [docs/design.md](docs/design.md).
 
-## Quick start
+## Try it
 
-You need Docker with Compose v2, Go 1.27 or later, and `make`. Every image runs on both amd64 and arm64 (Apple Silicon).
+You need Docker with Compose v2, Go 1.27 or later, and `make`. All the images run on both amd64 and arm64, so Apple Silicon is fine.
 
 ```bash
 make up            # build and start Kafka (KRaft), OpenSearch, Redis, Prometheus, Grafana, and the services
@@ -67,16 +61,16 @@ make data          # download Loghub HDFS_v1 (187 MB zip, 11.2M lines) into data
 make e2e           # replay 100,000 lines through the stack and run the zero-loss checker
 ```
 
-`make e2e` prints the checker's verdict and saves the raw output to `results/`. Set `LINES` and `RATE` to change the run, for example `make e2e LINES=1000000 RATE=20000`. `RATE=0` writes as fast as possible. For the smaller Apache dataset, run `make data DATASET=apache` and then `INPUT=data/loghub/Apache.log make e2e`.
+`make e2e` prints whether anything was lost and saves the raw output to `results/`. You can change the run with `LINES` and `RATE`, for example `make e2e LINES=1000000 RATE=20000`. `RATE=0` writes as fast as it can. If you want a smaller dataset, run `make data DATASET=apache`, then `INPUT=data/loghub/Apache.log make e2e`.
 
-Search the indexed logs:
+To search what you've indexed:
 
 ```bash
 curl -s -H 'X-API-Key: dev-query-key' \
   'localhost:8080/v1/logs?service=hdfs&level=warn&q=addStoredBlock&from=2008-11-09T00:00:00Z&to=2008-11-11T00:00:00Z&limit=20'
 ```
 
-To get the next page, pass the response's `next_cursor` back as `cursor=` with the same filters. The keys above are local development defaults set in `compose.yaml`. Override them with the `COLLECTOR_API_KEYS`, `AGENT_API_KEY`, and `QUERY_API_KEYS` environment variables.
+For the next page, pass the response's `next_cursor` back as `cursor=` and keep the same filters. The API keys above are local defaults from `compose.yaml`. To change them, set `COLLECTOR_API_KEYS`, `AGENT_API_KEY`, and `QUERY_API_KEYS`.
 
 | Endpoint | URL |
 |---|---|
@@ -92,38 +86,38 @@ To get the next page, pass the response's `next_cursor` back as `cursor=` with t
 
 `make down` stops everything and deletes the volumes.
 
-## Development
+## Working on it
 
 ```bash
 make test-unit          # unit tests with -race
-make test-integration   # Kafka and OpenSearch in testcontainers; needs Docker
+make test-integration   # real Kafka and OpenSearch in testcontainers; needs Docker
 make lint               # golangci-lint and buf lint
-make bench              # microbenchmarks; output saved to results/
+make bench              # microbenchmarks, saved to results/
 make proto              # regenerate gen/ from proto/
 make ci                 # run the GitHub Actions workflow locally with act
 ```
 
-Layout:
+Where things live:
 
-- `cmd/`: one binary per directory.
-- `internal/`: all logic. `agent`, `spool`, `collector`, `indexer`, `query`, `zeroloss`, and `loggen` are the main packages. The rest are shared helpers.
-- `integration/`: end-to-end tests against real Kafka and OpenSearch.
-- `proto/`: the protobuf contract. `gen/` holds the generated Go code.
-- `deploy/`: Prometheus and Grafana configuration.
-- `results/`: raw benchmark and replay output.
-- `docs/`: design notes.
+- `cmd/` has one binary per directory.
+- `internal/` has the logic. The main packages are `agent`, `spool`, `collector`, `indexer`, `query`, `zeroloss`, and `loggen`. The rest are shared helpers.
+- `integration/` has end-to-end tests against real Kafka and OpenSearch.
+- `proto/` is the gRPC contract, and `gen/` is the Go code generated from it.
+- `deploy/` has the Prometheus and Grafana config.
+- `results/` has raw output from benchmark and replay runs.
+- `docs/` has the design notes.
 
-Configuration comes from environment variables. Each `cmd/*/main.go` lists the variables it reads, with their defaults.
+Every service reads its config from environment variables. Each `cmd/*/main.go` lists the ones it uses and their defaults.
 
 ## Benchmark results
 
-Phase 4 fills in this section. Until then, [results/](results/) holds the raw output of the Phase 1 zero-loss replays.
+Not filled in yet. That's Phase 4. For now, [results/](results/) has the raw output of the Phase 1 zero-loss replays.
 
-## Roadmap
+## What's next
 
-1. **Core pipeline (done).** The agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
-2. **Chaos tests.** Kill the collector, Kafka, and the indexer mid-stream, inject network faults with Toxiproxy, and verify zero loss.
-3. **Redis.** Cache repeated queries, and add token-bucket rate limiting per API key at the collector and the query API.
-4. **Benchmarks.** Measure ingest logs/sec, end-to-end latency (p50 and p99), and query latency.
+1. **Core pipeline (done).** Agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
+2. **Chaos tests.** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
+3. **Redis.** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
+4. **Benchmarks.** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
 5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
 6. **Deployment.** A Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.
