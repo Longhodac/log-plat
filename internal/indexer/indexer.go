@@ -33,6 +33,10 @@ type Config struct {
 	DLQTopic    string
 	MaxPoll     int
 	Backoff     backoff.Policy
+	// BulkTimeout bounds one _bulk request. A request that hangs on a dead
+	// connection is abandoned and retried instead of wedging the indexer.
+	// Zero means no limit.
+	BulkTimeout time.Duration
 	// ShutdownGrace is how long an in-progress batch may keep indexing and
 	// committing after shutdown starts.
 	ShutdownGrace time.Duration
@@ -181,7 +185,12 @@ func (ix *Indexer) index(ctx context.Context, docs []pendingDoc) ([]*kgo.Record,
 			body.Write(d.line)
 		}
 		start := time.Now()
-		results, err := ix.OS.Bulk(ctx, body.Bytes())
+		bulkCtx, cancel := ctx, context.CancelFunc(func() {})
+		if ix.Cfg.BulkTimeout > 0 {
+			bulkCtx, cancel = context.WithTimeout(ctx, ix.Cfg.BulkTimeout)
+		}
+		results, err := ix.OS.Bulk(bulkCtx, body.Bytes())
+		cancel()
 		bulkSeconds.Observe(time.Since(start).Seconds())
 		if err == nil && len(results) != len(docs) {
 			err = fmt.Errorf("bulk returned %d items for %d docs", len(results), len(docs))

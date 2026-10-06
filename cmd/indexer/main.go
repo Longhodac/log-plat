@@ -39,6 +39,11 @@ func run(ctx context.Context, log *slog.Logger) error {
 		refresh     = env.String("INDEX_REFRESH_INTERVAL", "5s")
 		maxPoll     = env.Int("INDEXER_MAX_POLL_RECORDS", 5000)
 		grace       = env.Duration("SHUTDOWN_GRACE", 20*time.Second)
+		bulkTimeout = env.Duration("INDEXER_BULK_TIMEOUT", 30*time.Second)
+		// Kafka waits this long for a crashed member's heartbeat before it
+		// reassigns the member's partitions, so it is also how long a killed
+		// indexer's partitions sit idle. The client default is 45s.
+		sessionTimeout = env.Duration("INDEXER_SESSION_TIMEOUT", 10*time.Second)
 	)
 	if err := env.Err(); err != nil {
 		return err
@@ -63,6 +68,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 		kgo.ConsumerGroup(group),
 		kgo.ConsumeTopics(topic),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		kgo.SessionTimeout(sessionTimeout),
 		// Offsets are committed by hand after OpenSearch confirms the writes,
 		// and a rebalance cannot revoke partitions mid-batch.
 		kgo.DisableAutoCommit(),
@@ -82,7 +88,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 	ix := &indexer.Indexer{
 		Kafka: cl,
 		OS:    indexer.OpenSearchBulk{Client: osc},
-		Cfg:   indexer.Config{IndexPrefix: prefix, DLQTopic: dlq, MaxPoll: maxPoll, Backoff: backoff.Default, ShutdownGrace: grace},
+		Cfg:   indexer.Config{IndexPrefix: prefix, DLQTopic: dlq, MaxPoll: maxPoll, Backoff: backoff.Default, BulkTimeout: bulkTimeout, ShutdownGrace: grace},
 		Log:   log,
 		Now:   time.Now,
 	}

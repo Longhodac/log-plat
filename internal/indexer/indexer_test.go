@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"strings"
 	"testing"
@@ -43,6 +44,24 @@ func (b *scriptedBulk) Bulk(_ context.Context, body []byte) ([]ItemResult, error
 	out := make([]ItemResult, len(statuses))
 	for i, s := range statuses {
 		out[i] = ItemResult{Status: s, Error: "x"}
+	}
+	return out, nil
+}
+
+// hangingBulk blocks its first call until the context ends, like a request
+// stuck on a dead connection, then answers normally.
+type hangingBulk struct{ calls int }
+
+func (b *hangingBulk) Bulk(ctx context.Context, body []byte) ([]ItemResult, error) {
+	b.calls++
+	if b.calls == 1 {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+	n := bytes.Count(body, []byte("\n")) / 2
+	out := make([]ItemResult, n)
+	for i := range out {
+		out[i].Status = 201
 	}
 	return out, nil
 }
@@ -143,5 +162,35 @@ func BenchmarkEncode(b *testing.B) {
 		if _, _, reason := ix.encode(r, now); reason != "" {
 			b.Fatal(reason)
 		}
+	}
+}
+
+func TestHungBulkRequestIsAbandonedAndRetried(t *testing.T) {
+	b := &hangingBulk{}
+	ix := newIndexer(b)
+	ix.Cfg.BulkTimeout = 50 * time.Millisecond
+	line, obs, reason := ix.encode(record(t, 1), time.Now())
+	if reason != "" {
+		t.Fatal(reason)
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		dead, err := ix.index(context.Background(), []pendingDoc{{rec: record(t, 1), line: line, obs: obs}})
+		if err == nil && len(dead) != 0 {
+			err = errors.New("unexpected dead letters")
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("index() is still blocked on the hung request; BulkTimeout did not apply")
+	}
+	if b.calls != 2 {
+		t.Errorf("%d bulk calls, want 2 (the hung one, then the retry)", b.calls)
 	}
 }
