@@ -1,0 +1,5 @@
+[
+  { "name": "collector",  "listen": "0.0.0.0:7071",  "upstream": "collector:7070",  "enabled": true },
+  { "name": "kafka",      "listen": "0.0.0.0:19092", "upstream": "kafka:19092",     "enabled": true },
+  { "name": "opensearch", "listen": "0.0.0.0:19200", "upstream": "opensearch:9200", "enabled": true }
+]

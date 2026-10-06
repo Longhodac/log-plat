@@ -29,3 +29,39 @@ The median of the five 100k runs is 38,388 lines/s, with a range of 35,411 to 43
 - Error counters stayed at 0 across all runs: publish errors, stream errors, rejections, bulk retries, and commit errors.
 
 Phase 4 tunes this stage: concurrent bulk requests, more shards and partitions, and refresh settings.
+
+## Phase 2: chaos tests
+
+**Setup.** The `make chaos-up` stack: the Phase 1 services with Toxiproxy between the agent and collector, the services and Kafka, and the indexer and OpenSearch (`compose.chaos.yaml`). Same MacBook as above. Each scenario writes a 60,000-line file at 3,000 lines/s, injects a fault at 4 s, holds it, heals it, and runs the zero-loss checker. Faults are SIGKILLs and Toxiproxy toxics.
+
+**Command.** `make chaos`. The raw output of the final run is [20261005T235058Z/run.txt](chaos/20261005T235058Z/run.txt), and each scenario has a JSON report next to it.
+
+**Result.** All 17 scenarios passed, and the checker found 60,000 of 60,000 lines (zero missing, zero unexpected) in every one.
+
+| Scenario | Lines indexed during the fault | Seconds from last write to all indexed | Redundant writes absorbed |
+|---|---|---|---|
+| kill-collector | 0% | 4.5 | 0 |
+| kill-kafka | 0% | 0.5 | 0 |
+| kill-indexer | 0% | 4.5 | 0 |
+| kill-agent | 0% | 2.5 | 0 |
+| kill-opensearch | 0% | 4.9 | not measurable, OpenSearch's counter resets on restart |
+| net-collector-down | 0% | 10.8 | 0 |
+| net-kafka-down | 0% | 2.6 | 0 |
+| net-opensearch-down | 0% | 4.8 | 0 |
+| net-collector-latency (800 ms +/- 400 ms) | 0% | 4.6 | 0 |
+| net-collector-resets (reset after 300 ms) | 0% | 2.7 | 0 |
+| net-kafka-bandwidth (50 KB/s) | 0% | 4.6 | 0 |
+| net-opensearch-blackhole | 0% | 4.6 | 0 |
+| **net-collector-ack-loss** | 6% | 8.5 | **1,407** |
+| **kill-indexer-after-write-before-commit** | 3% | 8.6 | **1,402** |
+| crash-loop-collector (3 kills) | 5% | 3.1 | 0 |
+| crash-loop-indexer (3 kills) | 0% | 11.7 | 0 |
+| kill-everything-in-sequence | 0% | 28.8 | 0 |
+
+"Lines indexed during the fault" is the share of the lines written during the fault window that were already in OpenSearch when the fault healed. For hard outages the test requires it to stay under 50%, so a fault that did nothing fails the test. "Redundant writes absorbed" is OpenSearch's `index_total` delta minus 60,000. It is above zero only when the same log ID was written more than once. The two bold scenarios are built to force that, and the test fails if they do not.
+
+**Repeatability of the redelivery scenario.** `kill-indexer-after-write-before-commit` ran five more times, saved in [repeat-kill-indexer-after-write-before-commit/](chaos/repeat-kill-indexer-after-write-before-commit/). All five passed with zero loss and 1,399, 1,404, 1,793, 2,772, and 2,796 redundant writes absorbed. An earlier version of this scenario killed after a fixed delay and failed to force redelivery in two of three runs (not saved), so it now waits for the exact window.
+
+**Before and after the indexer change.** The [baseline run](chaos/20261005T233018Z/run.txt) predates the 10 s session timeout and has no redundant-write counter. In it, `kill-indexer` took 32.6 s from the last write to all lines indexed, and `kill-everything-in-sequence` took 44.7 s. In the final run they took 4.5 s and 28.8 s. Each is a single run. The mechanism is that Kafka holds a dead consumer's partitions until its session times out, which was 45 s and is now 10 s. The remaining 28.8 s in the sequence scenario comes from three restarts in a row, and I did not break it down further.
+
+**Noise.** `net-collector-latency` let 49% of the fault-window lines through in the baseline and 0% in the final run, so that scenario varies a lot. It has no stall assertion for that reason.

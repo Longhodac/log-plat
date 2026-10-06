@@ -1,0 +1,29 @@
+{
+  "scenario": "kill-indexer-after-write-before-commit",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12004,
+  "indexed_at_inject": 1986,
+  "written_at_heal": 60000,
+  "indexed_at_heal": 3388,
+  "indexed_share_during_fault": 0.029210767563963663,
+  "fault_seconds": 18.690745375,
+  "heal_seconds": 0.040164916,
+  "seconds_from_last_write_to_all_indexed": 8.6111665,
+  "indexer_indexed_counter_delta": 58014,
+  "indexer_counter_reset_by_restart": true,
+  "redundant_writes_absorbed": 1402,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-indexer-after-write-before-commit-20261005T235058Z.log",
+    "source": "/var/log/ingest/chaos-kill-indexer-after-write-before-commit-20261005T235058Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-05T23:56:36.348Z",
+    "last_indexed_at": "2026-10-05T23:57:04.899Z",
+    "ingest_seconds": 28.551,
+    "ingest_lines_per_sec": 2101.5025743406536,
+    "zero_loss": true
+  }
+}

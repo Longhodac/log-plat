@@ -1,0 +1,29 @@
+{
+  "scenario": "kill-agent",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12000,
+  "indexed_at_inject": 2670,
+  "written_at_heal": 38250,
+  "indexed_at_heal": 2670,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.337364292,
+  "heal_seconds": 0.798297167,
+  "seconds_from_last_write_to_all_indexed": 2.466639208,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-agent-20261005T235058Z.log",
+    "source": "/var/log/ingest/chaos-kill-agent-20261005T235058Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-05T23:52:19.697Z",
+    "last_indexed_at": "2026-10-05T23:52:39.542Z",
+    "ingest_seconds": 19.845,
+    "ingest_lines_per_sec": 3023.4315948601666,
+    "zero_loss": true
+  }
+}

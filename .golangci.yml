@@ -1,6 +1,6 @@
 version: "2"
 run:
-  build-tags: [integration]
+  build-tags: [integration, chaos]
 linters:
   default: standard
   enable:

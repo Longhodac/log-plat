@@ -1,0 +1,16 @@
+# command: go test -tags=chaos -count=1 -v -run 'TestChaos/kill-indexer-after-write-before-commit$' ./chaos/   (run 5 of 5)
+# commit: 302e7cb plus uncommitted Phase 2 changes
+=== RUN   TestChaos
+    chaos_test.go:64: run 20261006T000201Z; reports go to /Users/long/fall-2026/Log-plat/results/chaos/20261006T000201Z
+=== RUN   TestChaos/kill-indexer-after-write-before-commit
+    chaos_test.go:117: injecting kill-indexer-after-write-before-commit (12002 lines written, 2130 indexed)
+    chaos_test.go:137: healing kill-indexer-after-write-before-commit (60000 written, 3534 indexed; 3% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 23.315s
+    zeroloss.go:185: indexed 3534/60000
+    zeroloss.go:185: indexed 38791/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 10.7s after the last write; redundant writes absorbed=1404
+--- PASS: TestChaos (34.11s)
+    --- PASS: TestChaos/kill-indexer-after-write-before-commit (34.11s)
+PASS
+ok  	github.com/Longhodac/log-plat/chaos	34.434s

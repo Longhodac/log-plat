@@ -1,0 +1,28 @@
+{
+  "scenario": "net-collector-resets",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12005,
+  "indexed_at_inject": 8913,
+  "written_at_heal": 36181,
+  "indexed_at_heal": 8913,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.019539167,
+  "heal_seconds": 0.049639667,
+  "seconds_from_last_write_to_all_indexed": 4.449169667,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-net-collector-resets-20261005T233018Z.log",
+    "source": "/var/log/ingest/chaos-net-collector-resets-20261005T233018Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-05T23:34:45.56Z",
+    "last_indexed_at": "2026-10-05T23:35:08.411Z",
+    "ingest_seconds": 22.851,
+    "ingest_lines_per_sec": 2625.705658395694,
+    "zero_loss": true
+  }
+}

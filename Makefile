@@ -66,6 +66,25 @@ data: ## Download a Loghub dataset into data/loghub (DATASET=hdfs|apache)
 e2e: ## Replay LINES Loghub lines at RATE/s through the running stack and check for loss
 	scripts/e2e.sh $(LINES) $(RATE)
 
+CHAOS_COMPOSE := $(COMPOSE) -f compose.yaml -f compose.chaos.yaml
+
+.PHONY: chaos-up
+chaos-up: ## Start the stack with Toxiproxy between the services (for chaos tests)
+	@mkdir -p data/run
+	$(CHAOS_COMPOSE) up -d --build --wait
+
+.PHONY: chaos
+chaos: ## Kill services and break networks mid-stream; verify zero loss (needs chaos-up and make data)
+	@mkdir -p results/chaos
+	@f=results/chaos/run-$$(date -u +%Y%m%dT%H%M%SZ).txt; \
+	{ echo "# command: make chaos"; echo "# commit: $$(git rev-parse --short HEAD 2>/dev/null || echo none)"; \
+	  echo "# host: $$(uname -sm), $$(sysctl -n hw.ncpu 2>/dev/null || nproc) CPUs"; \
+	  go test -tags=chaos -count=1 -v -timeout=90m ./chaos/; } 2>&1 | tee $$f; echo "saved $$f"
+
+.PHONY: chaos-down
+chaos-down: ## Stop the chaos stack and delete its volumes
+	$(CHAOS_COMPOSE) down -v --remove-orphans
+
 .PHONY: ci
 ci: ## Run the GitHub Actions workflow locally with act (one job at a time: parallel jobs race on the shared toolcache)
 	act push --concurrent-jobs 1 -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-architecture linux/$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')

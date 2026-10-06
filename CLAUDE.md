@@ -10,8 +10,7 @@ A distributed log platform in Go. Data flows agent → collector (gRPC) → Kafk
 
 - **Explain every major design decision in docs/design.md.** Cover delivery guarantees, idempotency, and offset handling especially. When a change alters one of these, update the matching section in the same change. Write each section as the decision, the reason, and the cost.
 - **Never report a benchmark number without the command and the raw output that produced it.** Save results to the committed `results/` directory. Each file starts with the command, the commit, and the host. `scripts/e2e.sh` and `make bench` do this already. Name the limiter when you report a number, and say how many runs it is.
-- **Keep later phases out of scope until the user asks for them.** Phase 1 (the core pipeline) is done. Do not start any of these unprompted:
-  - Phase 2: chaos tests with Toxiproxy.
+- **Keep later phases out of scope until the user asks for them.** Phases 1 (core pipeline) and 2 (chaos tests) are done. Do not start any of these unprompted:
   - Phase 3: Redis caching and rate limiting.
   - Phase 4: load benchmarks.
   - Phase 5: live tail, alerting, and the OpenTelemetry demo.
@@ -23,6 +22,7 @@ A distributed log platform in Go. Data flows agent → collector (gRPC) → Kafk
 - The collector acks a batch only after Kafka acks every accepted record in it.
 - The indexer commits offsets only after every record in the poll is indexed or dead-lettered.
 - The agent's registry and spool cursor may lag reality but must never lead it.
+- A chaos scenario must prove its fault took effect (hard outages stall indexing, redelivery scenarios absorb redundant writes). A scenario that can pass without disrupting anything is a bug.
 - The agent (`internal/agent`) and the zero-loss checker (`internal/zeroloss`) frame lines through the same `internal/lineio.Framer`.
 
 ## Commands
@@ -34,6 +34,9 @@ make e2e LINES=100000   # replay through the stack and run the zero-loss checker
 make test               # unit tests (-race) and integration tests (testcontainers; needs Docker)
 make lint               # golangci-lint and buf lint
 make bench              # Go microbenchmarks, saved to results/
+make chaos-up           # start the stack with Toxiproxy between the services
+make chaos              # kill services and break networks mid-stream, verify zero loss (about 9 minutes)
+make chaos-down         # stop the chaos stack
 make proto              # regenerate gen/ after editing proto/
 make ci                 # run .github/workflows/ci.yml locally with act
 make down               # stop the stack and delete its volumes
@@ -43,5 +46,6 @@ make down               # stop the stack and delete its volumes
 
 - `cmd/<service>`: one main package per binary. Each wires config from environment variables and calls into `internal/`.
 - `internal/`: all logic. Each package has unit tests next to it.
+- `chaos/`: fault-injection tests behind the `chaos` build tag. They drive the running Compose stack with `docker compose kill` and Toxiproxy. They are not part of CI.
 - `integration/`: tests behind the `integration` build tag that run against real Kafka and OpenSearch containers.
 - `proto/` holds the protobuf definitions. `gen/` holds the generated code, which is committed. CI fails if `gen/` is stale.

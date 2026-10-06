@@ -1,0 +1,156 @@
+# command: make chaos
+# commit: 302e7cb
+# host: Darwin arm64, 10 CPUs
+=== RUN   TestChaos
+    chaos_test.go:64: run 20261005T235058Z; reports go to /Users/long/fall-2026/Log-plat/results/chaos/20261005T235058Z
+=== RUN   TestChaos/kill-collector
+    chaos_test.go:117: injecting kill-collector (12005 lines written, 3905 indexed)
+    chaos_test.go:137: healing kill-collector (37263 written, 3905 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.002s
+    zeroloss.go:185: indexed 3905/60000
+    zeroloss.go:185: indexed 9325/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.5s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/kill-kafka
+    chaos_test.go:117: injecting kill-kafka (12001 lines written, 2372 indexed)
+    chaos_test.go:137: healing kill-kafka (37260 written, 2372 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 30.868s
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 0.5s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/kill-indexer
+    chaos_test.go:117: injecting kill-indexer (12002 lines written, 4293 indexed)
+    chaos_test.go:137: healing kill-indexer (36900 written, 4293 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.001s
+    zeroloss.go:185: indexed 4293/60000
+    zeroloss.go:185: indexed 35651/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.5s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/kill-agent
+    chaos_test.go:117: injecting kill-agent (12000 lines written, 2670 indexed)
+    chaos_test.go:137: healing kill-agent (38250 written, 2670 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.012s
+    zeroloss.go:185: indexed 40621/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 2.5s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/kill-opensearch
+    chaos_test.go:117: injecting kill-opensearch (12000 lines written, 3063 indexed)
+    chaos_test.go:137: healing kill-opensearch (37323 written, 3063 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 25.791s
+    zeroloss.go:185: indexed 4466/60000
+    zeroloss.go:185: indexed 55732/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.9s after the last write; redundant writes absorbed=unknown (opensearch restarted)
+=== RUN   TestChaos/net-collector-down
+    chaos_test.go:117: injecting net-collector-down (12000 lines written, 751 indexed)
+    chaos_test.go:137: healing net-collector-down (36060 written, 751 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.002s
+    zeroloss.go:185: indexed 751/60000
+    zeroloss.go:185: indexed 43444/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 10.8s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-kafka-down
+    chaos_test.go:117: injecting net-kafka-down (12002 lines written, 10323 indexed)
+    chaos_test.go:137: healing net-kafka-down (36213 written, 10323 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.004s
+    zeroloss.go:185: indexed 58323/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 2.6s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-opensearch-down
+    chaos_test.go:117: injecting net-opensearch-down (12000 lines written, 2402 indexed)
+    chaos_test.go:137: healing net-opensearch-down (36063 written, 2402 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.004s
+    zeroloss.go:185: indexed 2402/60000
+    zeroloss.go:185: indexed 11138/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.8s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-collector-latency
+    chaos_test.go:117: injecting net-collector-latency (12002 lines written, 5820 indexed)
+    chaos_test.go:137: healing net-collector-latency (36060 written, 5820 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.001s
+    zeroloss.go:185: indexed 5820/60000
+    zeroloss.go:185: indexed 54335/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.6s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-collector-resets
+    chaos_test.go:117: injecting net-collector-resets (12002 lines written, 9752 indexed)
+    chaos_test.go:137: healing net-collector-resets (36153 written, 9752 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.011s
+    zeroloss.go:185: indexed 57753/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 2.7s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-kafka-bandwidth
+    chaos_test.go:117: injecting net-kafka-bandwidth (12001 lines written, 1442 indexed)
+    chaos_test.go:137: healing net-kafka-bandwidth (36570 written, 1442 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.003s
+    zeroloss.go:185: indexed 1442/60000
+    zeroloss.go:185: indexed 59772/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.6s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-opensearch-blackhole
+    chaos_test.go:117: injecting net-opensearch-blackhole (12002 lines written, 5581 indexed)
+    chaos_test.go:137: healing net-opensearch-blackhole (36153 written, 5581 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.002s
+    zeroloss.go:185: indexed 5581/60000
+    zeroloss.go:185: indexed 55513/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 4.6s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/net-collector-ack-loss
+    chaos_test.go:117: injecting net-collector-ack-loss (12005 lines written, 9666 indexed)
+    chaos_test.go:137: healing net-collector-ack-loss (36210 written, 11073 indexed; 6% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.003s
+    zeroloss.go:185: indexed 11073/60000
+    zeroloss.go:185: indexed 24870/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 8.5s after the last write; redundant writes absorbed=1407
+=== RUN   TestChaos/kill-indexer-after-write-before-commit
+    chaos_test.go:117: injecting kill-indexer-after-write-before-commit (12004 lines written, 1986 indexed)
+    chaos_test.go:137: healing kill-indexer-after-write-before-commit (60000 written, 3388 indexed; 3% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 22.743s
+    zeroloss.go:185: indexed 3388/60000
+    zeroloss.go:185: indexed 42215/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 8.6s after the last write; redundant writes absorbed=1402
+=== RUN   TestChaos/crash-loop-collector
+    chaos_test.go:117: injecting crash-loop-collector (12001 lines written, 9781 indexed)
+    chaos_test.go:137: healing crash-loop-collector (47954 written, 11509 indexed; 5% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.002s
+    zeroloss.go:185: indexed 57781/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 3.1s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/crash-loop-indexer
+    chaos_test.go:117: injecting crash-loop-indexer (12030 lines written, 33 indexed)
+    chaos_test.go:137: healing crash-loop-indexer (47313 written, 33 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 20.038s
+    zeroloss.go:185: indexed 33/60000
+    zeroloss.go:185: indexed 17618/60000
+    zeroloss.go:185: indexed 42868/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 11.7s after the last write; redundant writes absorbed=0
+=== RUN   TestChaos/kill-everything-in-sequence
+    chaos_test.go:117: injecting kill-everything-in-sequence (12000 lines written, 6001 indexed)
+    chaos_test.go:137: healing kill-everything-in-sequence (51601 written, 6001 indexed; 0% of the fault-window lines got through)
+    chaos_test.go:153: loggen finished 60000 lines in 37.953s
+    zeroloss.go:185: indexed 6001/60000
+    zeroloss.go:185: indexed 19492/60000
+    zeroloss.go:185: indexed 60000/60000
+    chaos_test.go:197: zero loss=true, all 60000 lines indexed 28.8s after the last write; redundant writes absorbed=0
+--- PASS: TestChaos (490.74s)
+    --- PASS: TestChaos/kill-collector (24.54s)
+    --- PASS: TestChaos/kill-kafka (31.37s)
+    --- PASS: TestChaos/kill-indexer (24.53s)
+    --- PASS: TestChaos/kill-agent (22.52s)
+    --- PASS: TestChaos/kill-opensearch (30.76s)
+    --- PASS: TestChaos/net-collector-down (30.81s)
+    --- PASS: TestChaos/net-kafka-down (22.64s)
+    --- PASS: TestChaos/net-opensearch-down (24.86s)
+    --- PASS: TestChaos/net-collector-latency (24.66s)
+    --- PASS: TestChaos/net-collector-resets (22.79s)
+    --- PASS: TestChaos/net-kafka-bandwidth (24.64s)
+    --- PASS: TestChaos/net-opensearch-blackhole (24.65s)
+    --- PASS: TestChaos/net-collector-ack-loss (28.56s)
+    --- PASS: TestChaos/kill-indexer-after-write-before-commit (31.39s)
+    --- PASS: TestChaos/crash-loop-collector (23.20s)
+    --- PASS: TestChaos/crash-loop-indexer (32.06s)
+    --- PASS: TestChaos/kill-everything-in-sequence (66.76s)
+PASS
+ok  	github.com/Longhodac/log-plat/chaos	491.059s

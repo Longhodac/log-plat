@@ -1,0 +1,29 @@
+{
+  "scenario": "net-opensearch-down",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12000,
+  "indexed_at_inject": 2402,
+  "written_at_heal": 36063,
+  "indexed_at_heal": 2402,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.031227875,
+  "heal_seconds": 0.045748042,
+  "seconds_from_last_write_to_all_indexed": 4.799396875,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-net-opensearch-down-20261005T235058Z.log",
+    "source": "/var/log/ingest/chaos-net-opensearch-down-20261005T235058Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-05T23:54:06.347Z",
+    "last_indexed_at": "2026-10-05T23:54:28.984Z",
+    "ingest_seconds": 22.637,
+    "ingest_lines_per_sec": 2650.527896806114,
+    "zero_loss": true
+  }
+}

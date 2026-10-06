@@ -86,6 +86,18 @@ For the next page, pass the response's `next_cursor` back as `cursor=` and keep 
 
 `make down` stops everything and deletes the volumes.
 
+## Break it on purpose
+
+The chaos tests check the "never lose a line" claim by hurting the pipeline while it runs. Each of the 17 scenarios writes a 60,000-line file, injects a fault partway through, heals it, and then runs the zero-loss checker. The faults include SIGKILLing the collector, Kafka, the indexer, the agent, and OpenSearch, cutting or slowing each network link with Toxiproxy, and crash loops. Two scenarios force duplicate deliveries, and the test fails unless OpenSearch absorbed some.
+
+```bash
+make chaos-up      # same stack as `make up`, with Toxiproxy between the services
+make chaos         # takes about 9 minutes; saves raw output and a JSON report per scenario to results/chaos/
+make chaos-down
+```
+
+All 17 passed with zero lines lost. The table, the runs behind it, and what the tests don't cover are in [results/README.md](results/README.md) and [docs/design.md](docs/design.md). The chaos tests are not part of CI because they need the full stack and take several minutes.
+
 ## Working on it
 
 ```bash
@@ -102,6 +114,7 @@ Where things live:
 - `cmd/` has one binary per directory.
 - `internal/` has the logic. The main packages are `agent`, `spool`, `collector`, `indexer`, `query`, `zeroloss`, and `loggen`. The rest are shared helpers.
 - `integration/` has end-to-end tests against real Kafka and OpenSearch.
+- `chaos/` has the fault-injection tests that drive the running stack.
 - `proto/` is the gRPC contract, and `gen/` is the Go code generated from it.
 - `deploy/` has the Prometheus and Grafana config.
 - `results/` has raw output from benchmark and replay runs.
@@ -111,12 +124,12 @@ Every service reads its config from environment variables. Each `cmd/*/main.go` 
 
 ## Benchmark results
 
-Not filled in yet. That's Phase 4. For now, [results/](results/) has the raw output of the Phase 1 zero-loss replays.
+Not filled in yet. That's Phase 4. For now, [results/](results/) has the raw output of the Phase 1 zero-loss replays and the Phase 2 chaos runs.
 
 ## What's next
 
 1. **Core pipeline (done).** Agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
-2. **Chaos tests.** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
+2. **Chaos tests (done).** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
 3. **Redis.** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
 4. **Benchmarks.** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
 5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.

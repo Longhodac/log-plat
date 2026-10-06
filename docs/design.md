@@ -111,9 +111,33 @@ Each service handles SIGTERM:
 - The indexer finishes and commits its current batch.
 - The query API drains its HTTP connections.
 
-## Deliberately out of scope for Phase 1
+## What the chaos tests show (Phase 2)
+
+The chaos suite in `chaos/` runs against the real Compose stack. It writes a uniquely named 60,000-line log file at 3,000 lines/s, injects a fault four seconds in, holds it for several seconds, heals it, and then runs the zero-loss checker on that file. Faults are SIGKILLs (`docker compose kill`) and Toxiproxy network faults on the agent to collector, services to Kafka, and indexer to OpenSearch links. `make chaos-up` starts the stack with the Toxiproxy overlay (`compose.chaos.yaml`), and `make chaos` runs the suite.
+
+**Each scenario checks that it did something.** A fault that never bit would pass trivially. For hard outages the test asserts that fewer than half of the lines written during the fault were indexed during it. Every hard outage in the final run indexed 0%.
+
+**Redelivery is exercised on purpose, and counted.** Most faults never cause a duplicate, because a sender that never got an ack simply resends something nobody stored. A duplicate appears only when a write succeeded and its acknowledgement or offset commit did not. Two scenarios are built to hit that window and assert that OpenSearch absorbed redundant writes. The count is `index_total` on the `logs-*` primaries minus the lines written, and it is greater than zero only if the same ID was indexed more than once.
+
+- *Collector acks lost.* A Toxiproxy `reset_peer` on the downstream direction drops the connection after 700 ms, so some batches reach Kafka and their acks never reach the agent. The agent resends them.
+- *Indexer killed after the write, before the commit.* OpenSearch responses are delayed by three seconds, and the test kills the indexer when OpenSearch has performed a write that the indexer has not yet heard back about. Kafka redelivers those records to the restarted indexer. An earlier version killed after a fixed delay and missed the window two times in three, so the scenario now watches for the window instead.
+
+**Two changes came out of it.**
+
+- *Killing the indexer cost about 33 seconds of recovery.* The cause is the consumer group session timeout, which defaults to 45 s in the Kafka client. Kafka does not reassign a dead member's partitions until that timeout expires, so a restarted indexer sat idle. `INDEXER_SESSION_TIMEOUT` now defaults to 10 s. The trade-off is that an indexer whose heartbeats stop for 10 s loses its partitions. The client sends heartbeats from a background goroutine, so a slow OpenSearch should not stop them. The scenarios hold faults for 8 s, shorter than the timeout, so a stall longer than 10 s is untested.
+- *A bulk request had no timeout.* A connection that goes silent, which the blackhole scenario simulates, would block the indexer until the connection died. `INDEXER_BULK_TIMEOUT` (default 30 s) abandons the request and retries it. This is safe because the retry writes the same IDs. A unit test covers it. The chaos blackhole scenario recovers either way, because its fault is removed after eight seconds, so it does not prove this change.
+
+**What these tests do not cover.**
+
+- Kafka has one broker with replication factor 1. "Kill Kafka" restarts the same broker with its data volume, so it shows the producers and consumers ride out a broker restart, not a replicated failover.
+- The runs are short (about 20 s of writes). They do not cover slow leaks or behavior at the spool size limit.
+- The agent's host is never lost, so the spool and registry on disk are always there when it restarts. A log file deleted while the agent is down is lost.
+- Killing OpenSearch keeps its data volume. Losing OpenSearch's data is a backup question, not a delivery one.
+- Each scenario ran once in the final run. Only the written-but-uncommitted kill was repeated (five times, all passing).
+
+## Deliberately out of scope so far
 
 - TLS between agent and collector, and on Kafka and OpenSearch. The local stack disables OpenSearch security.
 - Kafka replication. The local broker has `replication.factor=1`, so `acks=all` means one replica.
 - Redis caching and rate limiting (Phase 3). Redis runs in Compose but nothing uses it yet.
-- Chaos tests (Phase 2) and load benchmarks (Phase 4).
+- Load benchmarks (Phase 4).
