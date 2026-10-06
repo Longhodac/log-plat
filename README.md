@@ -96,7 +96,7 @@ make chaos         # takes about 9 minutes; saves raw output and a JSON report p
 make chaos-down
 ```
 
-All 17 passed with zero lines lost. The table, the runs behind it, and what the tests don't cover are in [results/README.md](results/README.md) and [docs/design.md](docs/design.md). The chaos tests are not part of CI because they need the full stack and take several minutes.
+All 17 passed with zero lines lost, in two full runs. The table, the runs behind it, and what the tests don't cover are in [results/README.md](results/README.md) and [docs/design.md](docs/design.md). The chaos tests are not part of CI because they need the full stack and take several minutes.
 
 ## Working on it
 

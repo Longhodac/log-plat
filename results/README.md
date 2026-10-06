@@ -64,4 +64,6 @@ Phase 4 tunes this stage: concurrent bulk requests, more shards and partitions, 
 
 **Before and after the indexer change.** The [baseline run](chaos/20261005T233018Z/run.txt) predates the 10 s session timeout and has no redundant-write counter. In it, `kill-indexer` took 32.6 s from the last write to all lines indexed, and `kill-everything-in-sequence` took 44.7 s. In the final run they took 4.5 s and 28.8 s. Each is a single run. The mechanism is that Kafka holds a dead consumer's partitions until its session times out, which was 45 s and is now 10 s. The remaining 28.8 s in the sequence scenario comes from three restarts in a row, and I did not break it down further.
 
+**Second full run.** A repeat of `make chaos` on the same stack also passed all 17 with zero loss, in [20261006T001211Z/](chaos/20261006T001211Z/). The two duplicate-forcing scenarios absorbed 1,404 and 1,964 redundant writes. `net-collector-resets` let 36% of its fault-window lines through, against 0% in the first run.
+
 **Noise.** `net-collector-latency` let 49% of the fault-window lines through in the baseline and 0% in the final run, so that scenario varies a lot. It has no stall assertion for that reason.
