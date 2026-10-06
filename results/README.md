@@ -67,3 +67,11 @@ Phase 4 tunes this stage: concurrent bulk requests, more shards and partitions, 
 **Second full run.** A repeat of `make chaos` on the same stack also passed all 17 with zero loss, in [20261006T001211Z/](chaos/20261006T001211Z/). The two duplicate-forcing scenarios absorbed 1,404 and 1,964 redundant writes. `net-collector-resets` let 36% of its fault-window lines through, against 0% in the first run.
 
 **Noise.** `net-collector-latency` let 49% of the fault-window lines through in the baseline and 0% in the final run, so that scenario varies a lot. It has no stall assertion for that reason.
+
+## Phase 3: rate limiting and the search cache
+
+Single runs on the same MacBook, the `make up` stack. Raw output is in [phase3/](phase3/).
+
+**Collector limit.** `COLLECTOR_RATE_LIMIT=5000` (burst 5,000) on the collector, then `scripts/e2e.sh 100000 0`. The raw output is [e2e-20261006T024504Z.txt](phase3/e2e-20261006T024504Z.txt). All 100,000 lines were indexed with zero loss in 19.04 s, which is 5,253 lines/s. The expected time is (100,000 - 5,000 burst) / 5,000 = 19 s, so the limit held to within the measurement. The collector's [metrics](phase3/collector-throttle-metrics.txt) show 18.8 s spent throttled, 70 limited decisions, and 0 publish errors. The unlimited run of the same command, in [e2e-20261006T024409Z.txt](phase3/e2e-20261006T024409Z.txt), was 20,000 lines at 10,599 lines/s. That run is a smaller replay than the Phase 1 runs, so do not compare it with them.
+
+**Query API.** [query-cache-and-ratelimit.txt](phase3/query-cache-and-ratelimit.txt) shows the same search returning `X-Cache: MISS` and then `HIT`, a different filter missing, and 300 back-to-back requests at a limit of 50/s with a burst of 100. 237 returned 200 and 63 returned 429, with `Retry-After: 1`. An unauthenticated request returned 401 without touching the bucket. I did not measure cached against uncached latency. That belongs to Phase 4.

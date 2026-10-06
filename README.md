@@ -86,6 +86,15 @@ For the next page, pass the response's `next_cursor` back as `cursor=` and keep 
 
 `make down` stops everything and deletes the volumes.
 
+## Limits and caching
+
+Redis does two jobs, and both are off until you set them.
+
+- **Collector.** `COLLECTOR_RATE_LIMIT` caps entries per second for each service. A service over its cap is slowed, not dropped, so its agent waits and keeps its spooled batches. In a test with a cap of 5,000/s, 100,000 lines took 19 s with zero lost.
+- **Query API.** `QUERY_RATE_LIMIT` allows each API key that many requests per second and answers `429` with `Retry-After` beyond it. `QUERY_CACHE_TTL` caches search results, so repeating a search returns `X-Cache: HIT`. A cached page can be up to the TTL old.
+
+Compose turns on the query limit (50/s) and the 30 s cache, and leaves the collector unlimited so replay benchmarks stay meaningful. If Redis goes down, requests go through unlimited and uncached. Details and the trade-offs are in [docs/design.md](docs/design.md).
+
 ## Break it on purpose
 
 The chaos tests check the "never lose a line" claim by hurting the pipeline while it runs. Each of the 17 scenarios writes a 60,000-line file, injects a fault partway through, heals it, and then runs the zero-loss checker. The faults include SIGKILLing the collector, Kafka, the indexer, the agent, and OpenSearch, cutting or slowing each network link with Toxiproxy, and crash loops. Two scenarios force duplicate deliveries, and the test fails unless OpenSearch absorbed some.
@@ -130,7 +139,7 @@ Not filled in yet. That's Phase 4. For now, [results/](results/) has the raw out
 
 1. **Core pipeline (done).** Agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
 2. **Chaos tests (done).** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
-3. **Redis.** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
+3. **Redis (done).** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
 4. **Benchmarks.** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
 5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
 6. **Deployment.** A Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.

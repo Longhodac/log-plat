@@ -160,3 +160,97 @@ func TestAcksFollowArrivalOrderAndCleanCloseReturnsEOF(t *testing.T) {
 		t.Fatalf("after last ack Recv = %v, want EOF", err)
 	}
 }
+
+// slowLimiter blocks each Wait for delay, like a service over its quota.
+type slowLimiter struct {
+	delay time.Duration
+	err   error
+	keys  []string
+	costs []int
+	mu    sync.Mutex
+}
+
+func (l *slowLimiter) Wait(ctx context.Context, key string, cost int) (time.Duration, error) {
+	l.mu.Lock()
+	l.keys, l.costs = append(l.keys, key), append(l.costs, cost)
+	l.mu.Unlock()
+	select {
+	case <-time.After(l.delay):
+		return l.delay, l.err
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
+}
+
+func startLimited(t *testing.T, pub Publisher, lim RateLimiter) logplatv1.IngestServiceClient {
+	t.Helper()
+	keys, _ := apikey.Parse("good-key:billing")
+	lis := bufconn.Listen(1 << 20)
+	srv := grpc.NewServer(grpc.StreamInterceptor(StreamAuth(keys, "x-api-key")))
+	logplatv1.RegisterIngestServiceServer(srv, &Server{Pub: pub, Limit: lim, MaxInflight: 4, Log: slog.New(slog.DiscardHandler), Now: time.Now})
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(srv.Stop)
+	conn, err := grpc.NewClient("passthrough:///bufnet",
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return lis.DialContext(ctx) }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+	return logplatv1.NewIngestServiceClient(conn)
+}
+
+func TestRateLimitSlowsABatchButStillAcksIt(t *testing.T) {
+	pub := &gatedPublisher{release: make(chan struct{})}
+	close(pub.release)
+	lim := &slowLimiter{delay: 300 * time.Millisecond}
+	s := open(t, startLimited(t, pub, lim), "good-key")
+
+	start := time.Now()
+	if err := s.Send(&logplatv1.IngestRequest{Seq: 1, Entries: []*logplatv1.LogEntry{entry(0), entry(1), entry(2)}}); err != nil {
+		t.Fatal(err)
+	}
+	a, err := s.Recv()
+	if err != nil || a.GetAccepted() != 3 {
+		t.Fatalf("ack = %v, %v; want 3 accepted", a, err)
+	}
+	if took := time.Since(start); took < 300*time.Millisecond {
+		t.Errorf("ack came after %v, before the limiter released the batch", took)
+	}
+	if len(lim.keys) != 1 || lim.keys[0] != "billing" || lim.costs[0] != 3 {
+		t.Errorf("limiter saw keys %v costs %v; want the service billing and cost 3", lim.keys, lim.costs)
+	}
+}
+
+func TestRejectedEntriesDoNotSpendQuota(t *testing.T) {
+	pub := &gatedPublisher{release: make(chan struct{})}
+	close(pub.release)
+	lim := &slowLimiter{}
+	s := open(t, startLimited(t, pub, lim), "good-key")
+	bad := entry(1)
+	bad.Message = ""
+	if err := s.Send(&logplatv1.IngestRequest{Seq: 1, Entries: []*logplatv1.LogEntry{entry(0), bad}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Recv(); err != nil {
+		t.Fatal(err)
+	}
+	if len(lim.costs) != 1 || lim.costs[0] != 1 {
+		t.Errorf("limiter costs %v, want [1]: only the valid entry should count", lim.costs)
+	}
+}
+
+func TestLimiterFailureStillPublishes(t *testing.T) {
+	pub := &gatedPublisher{release: make(chan struct{})}
+	close(pub.release)
+	s := open(t, startLimited(t, pub, &slowLimiter{err: errors.New("redis down")}), "good-key")
+	if err := s.Send(&logplatv1.IngestRequest{Seq: 1, Entries: []*logplatv1.LogEntry{entry(0)}}); err != nil {
+		t.Fatal(err)
+	}
+	if a, err := s.Recv(); err != nil || a.GetAccepted() != 1 {
+		t.Fatalf("ack = %v, %v; want the entry published even though the limiter failed", a, err)
+	}
+	if len(pub.got) != 1 {
+		t.Errorf("published %d entries, want 1", len(pub.got))
+	}
+}

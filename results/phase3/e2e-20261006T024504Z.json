@@ -1,0 +1,13 @@
+{
+  "file": "data/run/replay-20261006T024504Z.log",
+  "source": "/var/log/ingest/replay-20261006T024504Z.log",
+  "expected": 100000,
+  "indexed_docs_for_source": 100000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T02:45:06.199Z",
+  "last_indexed_at": "2026-10-06T02:45:25.234Z",
+  "ingest_seconds": 19.035,
+  "ingest_lines_per_sec": 5253.480430785396,
+  "zero_loss": true
+}

@@ -1,0 +1,5 @@
+# collector metrics after the capped run (COLLECTOR_RATE_LIMIT=5000, burst 5000), 02:45:42Z
+logplat_collector_publish_errors_total 0
+logplat_collector_throttle_seconds_total{service="hdfs"} 18.804746009
+logplat_ratelimit_decisions_total{component="collector",result="allowed"} 72
+logplat_ratelimit_decisions_total{component="collector",result="limited"} 70

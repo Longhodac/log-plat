@@ -111,6 +111,24 @@ Each service handles SIGTERM:
 - The indexer finishes and commits its current batch.
 - The query API drains its HTTP connections.
 
+## Redis: rate limits and the search cache (Phase 3)
+
+Redis is optional in both places. With the limit and TTL settings at 0, the services never connect to it. Every Redis call fails open, because the limiter and the cache protect the pipeline and must never be the reason it stops.
+
+**Token bucket per key, in Redis.** Each key has a bucket that refills at `rate` tokens per second up to `burst`. One Lua script reads the bucket, refills it, spends tokens, and writes it back, so the whole step is atomic. Two replicas of a service, or 400 goroutines, cannot overspend. An integration test sends 400 concurrent requests through two separate clients at a bucket of 50 and requires exactly 50 to pass. The script reads the time from Redis, not from the caller, so a replica with a skewed clock cannot mint tokens. The key expires shortly after the bucket would be full again, so idle keys cost nothing. Buckets are keyed by service name, not by the API key, so secrets never reach Redis.
+
+**Collector: slow a service, never reject it.** When a service exceeds `COLLECTOR_RATE_LIMIT` entries per second, the collector waits for tokens before publishing. The receive loop blocks, gRPC flow control fills, and the agent's sends wait. The agent keeps its spooled batches, so nothing is lost and no stream is torn down. Rejecting with an error would make the agent back off and reconnect, which is slower and noisier for the same effect. Only valid entries cost tokens, and one batch larger than the bucket is clamped to the bucket size, so it waits for a full bucket instead of waiting forever. Keep `COLLECTOR_RATE_BURST` at or above a full agent batch (1,000 entries by default).
+
+**Query API: refuse with 429.** A search is a request that someone is waiting on, so the API answers `429` with `Retry-After` and a structured `rate_limited` error. Limiting runs after authentication, so unauthenticated traffic cannot drain a real service's budget. Cache hits still spend a token, because the limit protects the API as a whole and not only OpenSearch.
+
+**Search cache.** Results are cached in Redis for `QUERY_CACHE_TTL`. The key hashes every filter, the limit, and the cursor, so one cursor can never serve another filter set. Identical searches that arrive while one is running share a single OpenSearch call (singleflight). The response carries `X-Cache: HIT` or `MISS`.
+
+**Cost: stale pages.** Logs keep arriving, so a cached page can miss lines indexed in the last TTL (30 s in Compose). That is acceptable for log search and the TTL bounds it, but it means a search right after an incident can look one TTL behind. There is no invalidation. Set `QUERY_CACHE_TTL=0` to turn the cache off.
+
+**Failure behavior.** Redis errors let the request through and are counted (`logplat_ratelimit_decisions_total{result="error"}`, `logplat_query_cache_total{result="error"}`). The client uses 250 ms timeouts, so a dead Redis costs each request a fraction of a second. There is no circuit breaker, so a dead Redis still adds that delay to every request. While Redis is down, limits are not enforced.
+
+**Not covered.** The limit applies per service name, so an agent fleet sharing one API key shares one bucket. There is no per-IP limit. The chaos suite was not rerun with limiting turned on.
+
 ## What the chaos tests show (Phase 2)
 
 The chaos suite in `chaos/` runs against the real Compose stack. It writes a uniquely named 60,000-line log file at 3,000 lines/s, injects a fault four seconds in, holds it for several seconds, heals it, and then runs the zero-loss checker on that file. Faults are SIGKILLs (`docker compose kill`) and Toxiproxy network faults on the agent to collector, services to Kafka, and indexer to OpenSearch links. `make chaos-up` starts the stack with the Toxiproxy overlay (`compose.chaos.yaml`), and `make chaos` runs the suite.
@@ -139,5 +157,4 @@ The chaos suite in `chaos/` runs against the real Compose stack. It writes a uni
 
 - TLS between agent and collector, and on Kafka and OpenSearch. The local stack disables OpenSearch security.
 - Kafka replication. The local broker has `replication.factor=1`, so `acks=all` means one replica.
-- Redis caching and rate limiting (Phase 3). Redis runs in Compose but nothing uses it yet.
 - Load benchmarks (Phase 4).

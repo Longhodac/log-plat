@@ -71,12 +71,18 @@ services:
     image: logplat/collector:dev
     depends_on:
       kafka: { condition: service_healthy }
+      redis: { condition: service_healthy }
     ports:
       - "7070:7070"
       - "9101:9100"
     environment:
       KAFKA_BROKERS: kafka:9092
       COLLECTOR_API_KEYS: ${COLLECTOR_API_KEYS:-dev-agent-key:hdfs}
+      REDIS_ADDR: redis:6379
+      # Entries per second per service. 0 means unlimited, which keeps replay
+      # benchmarks meaningful. Set it to try limiting, e.g. COLLECTOR_RATE_LIMIT=5000.
+      COLLECTOR_RATE_LIMIT: ${COLLECTOR_RATE_LIMIT:-0}
+      COLLECTOR_RATE_BURST: ${COLLECTOR_RATE_BURST:-5000}
 
   indexer:
     <<: *go-service
@@ -113,11 +119,16 @@ services:
     image: logplat/queryapi:dev
     depends_on:
       opensearch: { condition: service_healthy }
+      redis: { condition: service_healthy }
     ports:
       - "8080:8080"
     environment:
       OPENSEARCH_ADDRS: http://opensearch:9200
       QUERY_API_KEYS: ${QUERY_API_KEYS:-dev-query-key:ops}
+      REDIS_ADDR: redis:6379
+      QUERY_RATE_LIMIT: ${QUERY_RATE_LIMIT:-50}
+      QUERY_RATE_BURST: ${QUERY_RATE_BURST:-100}
+      QUERY_CACHE_TTL: ${QUERY_CACHE_TTL:-30s}
 
   prometheus:
     image: prom/prometheus:v3.15.0

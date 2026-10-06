@@ -17,6 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tckafka "github.com/testcontainers/testcontainers-go/modules/kafka"
 	tcopensearch "github.com/testcontainers/testcontainers-go/modules/opensearch"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 
 	"github.com/Longhodac/log-plat/internal/backoff"
 	"github.com/Longhodac/log-plat/internal/doc"
@@ -28,9 +29,12 @@ const (
 	opensearchImage = "opensearchproject/opensearch:3.9.0"
 )
 
+const redisImage = "redis:8.2-alpine"
+
 var (
-	brokers []string
-	osAddr  string
+	brokers   []string
+	osAddr    string
+	redisAddr string
 )
 
 func TestMain(m *testing.M) {
@@ -66,6 +70,19 @@ func withContainers(ctx context.Context, m *testing.M) (int, error) {
 	if osAddr, err = oc.Address(ctx); err != nil {
 		return 0, err
 	}
+
+	rc, err := tcredis.Run(ctx, redisImage)
+	if rc != nil {
+		defer func() { _ = testcontainers.TerminateContainer(rc) }()
+	}
+	if err != nil {
+		return 0, fmt.Errorf("redis: %w", err)
+	}
+	uri, err := rc.ConnectionString(ctx)
+	if err != nil {
+		return 0, err
+	}
+	redisAddr = strings.TrimPrefix(uri, "redis://")
 	return m.Run(), nil
 }
 

@@ -46,6 +46,8 @@ type SortKey struct {
 type Page struct {
 	Logs []doc.Doc
 	Next *SortKey
+	// Cached is set when the page came from the cache. It is not stored.
+	Cached bool `json:"-"`
 }
 
 // FieldError is a client mistake in one parameter.

@@ -66,6 +66,19 @@ func (r *Reader) Int(key string, def int) int {
 	return n
 }
 
+// Float returns key as a float64, or def when unset.
+func (r *Reader) Float(key string, def float64) float64 {
+	v, ok := r.lookup(key)
+	if !ok {
+		return def
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		r.errs = append(r.errs, fmt.Errorf("%s: %w", key, err))
+	}
+	return f
+}
+
 // Duration returns key parsed by time.ParseDuration, or def when unset.
 func (r *Reader) Duration(key string, def time.Duration) time.Duration {
 	v, ok := r.lookup(key)

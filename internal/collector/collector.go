@@ -23,10 +23,22 @@ type Publisher interface {
 	Publish(ctx context.Context, entries []*logplatv1.LogEntry) (wait func() error)
 }
 
+// RateLimiter slows a service that sends faster than its quota. Wait blocks
+// until cost entries may proceed, and returns how long it blocked. An error
+// other than a cancelled context means the limiter itself failed and the
+// entries were let through.
+type RateLimiter interface {
+	Wait(ctx context.Context, key string, cost int) (time.Duration, error)
+}
+
 // Server implements IngestService.
 type Server struct {
 	logplatv1.UnimplementedIngestServiceServer
 	Pub Publisher
+	// Limit, if set, caps how fast each service may publish entries. A service
+	// over its quota is slowed, not rejected: the receive loop blocks, gRPC flow
+	// control fills up, and the agent's sends wait. Nothing is dropped.
+	Limit RateLimiter
 	// MaxInflight bounds batches per stream that are publishing but not yet acked.
 	MaxInflight int
 	Log         *slog.Logger
@@ -115,6 +127,16 @@ func (s *Server) start(ctx context.Context, svc string, req *logplatv1.IngestReq
 
 	wait := func() error { return nil }
 	if len(valid) > 0 {
+		if s.Limit != nil {
+			waited, err := s.Limit.Wait(ctx, svc, len(valid))
+			throttleSeconds.WithLabelValues(svc).Add(waited.Seconds())
+			switch {
+			case ctx.Err() != nil:
+				return pending{ack: ack, wait: func() error { return ctx.Err() }, received: now}
+			case err != nil:
+				s.Log.Warn("rate limiter failed; letting the batch through", "service", svc, "error", err)
+			}
+		}
 		wait = s.Pub.Publish(ctx, valid)
 	}
 	return pending{ack: ack, wait: wait, received: now}

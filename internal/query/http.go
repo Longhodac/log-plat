@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -45,9 +46,16 @@ type SearchResponse struct {
 	NextCursor string    `json:"next_cursor,omitempty"`
 }
 
+// RateLimiter decides whether a service may make another request now.
+type RateLimiter interface {
+	Allow(ctx context.Context, key string, cost int) (allowed bool, retryAfter time.Duration, err error)
+}
+
 // Server is the query API.
 type Server struct {
-	Search  Searcher
+	Search Searcher
+	// Limit, if set, allows each service a request rate, and answers 429 beyond it.
+	Limit   RateLimiter
 	Keys    *apikey.Store
 	Ready   obs.ReadyFunc
 	Log     *slog.Logger
@@ -57,7 +65,7 @@ type Server struct {
 // Handler routes the API, health, readiness, and metrics.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("GET /v1/logs", s.instrument("/v1/logs", s.auth(http.HandlerFunc(s.searchLogs))))
+	mux.Handle("GET /v1/logs", s.instrument("/v1/logs", s.auth(s.limit(http.HandlerFunc(s.searchLogs)))))
 	mux.Handle("/", obs.AdminHandler(s.Ready))
 	return mux
 }
@@ -85,6 +93,11 @@ func (s *Server) searchLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, APIError{Code: "unavailable", Message: "search backend unavailable"})
 		return
 	}
+	if page.Cached {
+		w.Header().Set("X-Cache", "HIT")
+	} else {
+		w.Header().Set("X-Cache", "MISS")
+	}
 	resp := SearchResponse{Logs: page.Logs}
 	if page.Next != nil {
 		resp.NextCursor = EncodeCursor(*page.Next, q)
@@ -99,9 +112,33 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, APIError{Code: "unauthenticated", Message: "missing X-API-Key header"})
 			return
 		}
-		if _, ok := s.Keys.Service(key); !ok {
+		svc, ok := s.Keys.Service(key)
+		if !ok {
 			writeError(w, http.StatusUnauthorized, APIError{Code: "unauthenticated", Message: "unknown API key"})
 			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), serviceKey{}, svc)))
+	})
+}
+
+type serviceKey struct{}
+
+// limit spends one token per request from the caller's bucket. It runs after
+// auth, so unauthenticated traffic cannot drain a real service's budget.
+func (s *Server) limit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.Limit != nil {
+			svc, _ := r.Context().Value(serviceKey{}).(string)
+			ok, retry, err := s.Limit.Allow(r.Context(), svc, 1)
+			if err != nil {
+				s.Log.Warn("rate limiter failed; letting the request through", "error", err)
+			}
+			if !ok {
+				secs := int(math.Ceil(retry.Seconds()))
+				w.Header().Set("Retry-After", strconv.Itoa(max(secs, 1)))
+				writeError(w, http.StatusTooManyRequests, APIError{Code: "rate_limited", Message: "request rate exceeded; retry after " + strconv.Itoa(max(secs, 1)) + "s"})
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})

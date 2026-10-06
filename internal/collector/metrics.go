@@ -28,6 +28,10 @@ var (
 		Name: "logplat_collector_publish_errors_total",
 		Help: "Batches whose Kafka write failed.",
 	})
+	throttleSeconds = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "logplat_collector_throttle_seconds_total",
+		Help: "Seconds batches spent waiting for a service's rate limit.",
+	}, []string{"service"})
 	authFailures = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "logplat_collector_auth_failures_total",
 		Help: "Streams rejected for a missing or unknown API key.",
