@@ -1,0 +1,29 @@
+{
+  "scenario": "net-opensearch-blackhole",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 3333,
+  "written_at_heal": 36062,
+  "indexed_at_heal": 3333,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.03251225,
+  "heal_seconds": 0.054539458,
+  "seconds_from_last_write_to_all_indexed": 4.751811875,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-net-opensearch-blackhole-20261006T001211Z.log",
+    "source": "/var/log/ingest/chaos-net-opensearch-blackhole-20261006T001211Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T00:16:52.861Z",
+    "last_indexed_at": "2026-10-06T00:17:13.995Z",
+    "ingest_seconds": 21.134,
+    "ingest_lines_per_sec": 2839.0271600264978,
+    "zero_loss": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "scenario": "crash-loop-collector",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12001,
+  "indexed_at_inject": 5943,
+  "written_at_heal": 44433,
+  "indexed_at_heal": 29943,
+  "indexed_share_during_fault": 0.740009866798224,
+  "fault_seconds": 10.780476666,
+  "heal_seconds": 0.036691625,
+  "seconds_from_last_write_to_all_indexed": 2.761718958,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-crash-loop-collector-20261006T001211Z.log",
+    "source": "/var/log/ingest/chaos-crash-loop-collector-20261006T001211Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T00:18:14.861Z",
+    "last_indexed_at": "2026-10-06T00:18:33.236Z",
+    "ingest_seconds": 18.375,
+    "ingest_lines_per_sec": 3265.3061224489797,
+    "zero_loss": true
+  }
+}
