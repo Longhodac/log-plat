@@ -38,6 +38,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 		replicas    = env.Int("INDEX_REPLICAS", 0)
 		refresh     = env.String("INDEX_REFRESH_INTERVAL", "5s")
 		maxPoll     = env.Int("INDEXER_MAX_POLL_RECORDS", 5000)
+		bulkWorkers = env.Int("INDEXER_BULK_WORKERS", 1)
 		grace       = env.Duration("SHUTDOWN_GRACE", 20*time.Second)
 		bulkTimeout = env.Duration("INDEXER_BULK_TIMEOUT", 30*time.Second)
 		// Kafka waits this long for a crashed member's heartbeat before it
@@ -88,7 +89,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 	ix := &indexer.Indexer{
 		Kafka: cl,
 		OS:    indexer.OpenSearchBulk{Client: osc},
-		Cfg:   indexer.Config{IndexPrefix: prefix, DLQTopic: dlq, MaxPoll: maxPoll, Backoff: backoff.Default, BulkTimeout: bulkTimeout, ShutdownGrace: grace},
+		Cfg:   indexer.Config{IndexPrefix: prefix, DLQTopic: dlq, MaxPoll: maxPoll, BulkWorkers: bulkWorkers, Backoff: backoff.Default, BulkTimeout: bulkTimeout, ShutdownGrace: grace},
 		Log:   log,
 		Now:   time.Now,
 	}

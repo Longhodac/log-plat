@@ -28,6 +28,11 @@ var (
 		Name: "logplat_collector_publish_errors_total",
 		Help: "Batches whose Kafka write failed.",
 	})
+	agentDwell = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "logplat_collector_agent_dwell_seconds",
+		Help:    "Time from the agent reading a line to the collector receiving its batch: tailer poll, batching, spool, and the send.",
+		Buckets: prometheus.ExponentialBuckets(0.005, 1.4, 30),
+	})
 	throttleSeconds = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "logplat_collector_throttle_seconds_total",
 		Help: "Seconds batches spent waiting for a service's rate limit.",

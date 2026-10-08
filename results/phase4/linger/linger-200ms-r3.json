@@ -1,0 +1,19 @@
+{
+  "file": "data/run/bench-linger-200ms-r3-1791265169.log",
+  "source": "/var/log/ingest/bench-linger-200ms-r3-1791265169.log",
+  "expected": 100000,
+  "indexed_docs_for_source": 100000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T05:39:39.124Z",
+  "last_indexed_at": "2026-10-06T05:39:57.711Z",
+  "ingest_seconds": 18.587,
+  "ingest_lines_per_sec": 5380.104374024856,
+  "latency": {
+    "p50_ms": 118.61311316260216,
+    "p90_ms": 183.85399825892304,
+    "p99_ms": 252.23018108651908,
+    "max_ms": 278
+  },
+  "zero_loss": true
+}

@@ -1,0 +1,21 @@
+{
+  "requests": 38024,
+  "seconds": 10.00383375,
+  "requests_per_sec": 3800.9428135488556,
+  "p50_ms": 3.404,
+  "p90_ms": 5.266,
+  "p99_ms": 8.699,
+  "max_ms": 153.107,
+  "status_counts": {
+    "200": 38024
+  },
+  "cache_hit_responses": 37784,
+  "cache_miss_responses": 240,
+  "transport_errors": 0,
+  "empty_or_short_bodies": 0,
+  "hit_p50_ms": 3.395,
+  "miss_p50_ms": 108.885,
+  "miss_p99_ms": 147.056,
+  "workers": 16,
+  "distinct_queries": 30
+}

@@ -1,0 +1,35 @@
+{
+  "scenario": "net-opensearch-down",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12000,
+  "indexed_at_inject": 1776,
+  "written_at_heal": 36091,
+  "indexed_at_heal": 1776,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.052916666,
+  "heal_seconds": 0.072851916,
+  "seconds_from_last_write_to_all_indexed": 3.140013625,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-net-opensearch-down-20261006T060443Z.log",
+    "source": "/var/log/ingest/chaos-net-opensearch-down-20261006T060443Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T06:08:08.357Z",
+    "last_indexed_at": "2026-10-06T06:08:29.204Z",
+    "ingest_seconds": 20.847,
+    "ingest_lines_per_sec": 2878.111958555188,
+    "latency": {
+      "p50_ms": 858.142455039364,
+      "p90_ms": 1069.5471537807987,
+      "p99_ms": 1192,
+      "max_ms": 1193
+    },
+    "zero_loss": true
+  }
+}

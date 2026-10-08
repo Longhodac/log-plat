@@ -1,0 +1,20 @@
+# CPU samples (percent of one core; 10 cores available) during single 12s runs, taken by docker stats and ps
+# commit: f2218b4 plus uncommitted Phase 4 changes
+=== repeat, cached (workers=16, port 8080)
+logplat-opensearch-1 cpu=10.79% logplat-query-api-1 cpu=262.79% logplat-query-api-nocache-1 cpu=0.00% logplat-redis-1 cpu=18.60%  querybench cpu=64.9%
+logplat-opensearch-1 cpu=1.09% logplat-query-api-1 cpu=281.12% logplat-query-api-nocache-1 cpu=0.00% logplat-redis-1 cpu=19.39%  querybench cpu=63.4%
+logplat-opensearch-1 cpu=0.97% logplat-query-api-1 cpu=242.26% logplat-query-api-nocache-1 cpu=0.00% logplat-redis-1 cpu=16.36%  querybench cpu=51.6%
+logplat-opensearch-1 cpu=0.69% logplat-query-api-1 cpu=274.90% logplat-query-api-nocache-1 cpu=0.00% logplat-redis-1 cpu=18.82%  querybench cpu=57.3%
+rps 6019 p50 2.47 p99 5.9
+=== distinct, uncached (workers=16, port 8081)
+logplat-opensearch-1 cpu=638.61% logplat-query-api-1 cpu=0.02% logplat-query-api-nocache-1 cpu=156.22% logplat-redis-1 cpu=1.51%  querybench cpu=16.0%
+logplat-opensearch-1 cpu=624.46% logplat-query-api-1 cpu=0.68% logplat-query-api-nocache-1 cpu=163.45% logplat-redis-1 cpu=0.32%  querybench cpu=16.1%
+logplat-opensearch-1 cpu=564.82% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=136.55% logplat-redis-1 cpu=1.73%  querybench cpu=10.6%
+logplat-opensearch-1 cpu=613.92% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=158.28% logplat-redis-1 cpu=0.35%  querybench cpu=15.3%
+rps 1313 p50 9.03 p99 59.1
+=== pages, uncached (workers=1, port 8081)
+logplat-opensearch-1 cpu=112.78% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=1.45% logplat-redis-1 cpu=0.86%  querybench cpu=0.0%
+logplat-opensearch-1 cpu=112.89% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=1.53% logplat-redis-1 cpu=0.18%  querybench cpu=0.0%
+logplat-opensearch-1 cpu=114.08% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=2.15% logplat-redis-1 cpu=0.17%  querybench cpu=0.0%
+logplat-opensearch-1 cpu=145.86% logplat-query-api-1 cpu=0.00% logplat-query-api-nocache-1 cpu=2.28% logplat-redis-1 cpu=0.21%  querybench cpu=0.1%
+rps 11 p50 83.17 p99 146.9

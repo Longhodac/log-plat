@@ -298,6 +298,68 @@
         }
       ],
       "id": 6
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Where a line waits (p50 / p99)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_collector_agent_dwell_seconds_bucket[1m])))",
+          "legendFormat": "agent read to collector p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_collector_agent_dwell_seconds_bucket[1m])))",
+          "legendFormat": "agent read to collector p99"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_collector_publish_seconds_bucket[1m])))",
+          "legendFormat": "Kafka publish p50"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_indexer_kafka_dwell_seconds_bucket[1m])))",
+          "legendFormat": "in Kafka before indexer p50"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(logplat_indexer_kafka_dwell_seconds_bucket[1m])))",
+          "legendFormat": "in Kafka before indexer p99"
+        },
+        {
+          "refId": "F",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(logplat_indexer_bulk_seconds_bucket[1m])))",
+          "legendFormat": "bulk write p50"
+        }
+      ]
     }
   ]
 }

@@ -34,6 +34,16 @@ var (
 		Help:    "Time from the agent reading a line to it being indexed.",
 		Buckets: prometheus.ExponentialBuckets(0.01, 2, 16),
 	})
+	phaseSeconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "logplat_indexer_phase_seconds",
+		Help:    "Time per poll cycle spent in each phase: poll (waiting for records), process (encode and bulk write), commit.",
+		Buckets: prometheus.ExponentialBuckets(0.001, 1.5, 24),
+	}, []string{"phase"})
+	kafkaDwell = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "logplat_indexer_kafka_dwell_seconds",
+		Help:    "Time from the collector producing a record to the indexer polling it. Uses the Kafka record timestamp.",
+		Buckets: prometheus.ExponentialBuckets(0.005, 1.4, 30),
+	})
 	consumerLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "logplat_indexer_consumer_lag",
 		Help: "Records between the group's committed offset and the partition end.",

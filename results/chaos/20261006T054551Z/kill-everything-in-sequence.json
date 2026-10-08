@@ -1,0 +1,35 @@
+{
+  "scenario": "kill-everything-in-sequence",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 1920,
+  "written_at_heal": 51211,
+  "indexed_at_heal": 1920,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 13.069058791,
+  "heal_seconds": 20.777332291,
+  "seconds_from_last_write_to_all_indexed": 16.740493791,
+  "indexer_indexed_counter_delta": 2042,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-everything-in-sequence-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-kill-everything-in-sequence-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:52:35.631Z",
+    "last_indexed_at": "2026-10-06T05:53:28.529Z",
+    "ingest_seconds": 52.898,
+    "ingest_lines_per_sec": 1134.2583840598888,
+    "latency": {
+      "p50_ms": 32563.026548881593,
+      "p90_ms": 32775,
+      "p99_ms": 32845.31790123457,
+      "max_ms": 32846
+    },
+    "zero_loss": true
+  }
+}

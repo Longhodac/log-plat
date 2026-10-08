@@ -85,6 +85,21 @@ chaos: ## Kill services and break networks mid-stream; verify zero loss (needs c
 chaos-down: ## Stop the chaos stack and delete its volumes
 	$(CHAOS_COMPOSE) down -v --remove-orphans
 
+BENCH_COMPOSE := $(COMPOSE) -f compose.yaml -f compose.bench.yaml
+
+.PHONY: bench-up
+bench-up: ## Start the stack with the benchmark overlay (named volume for the agent, an uncached query API)
+	@mkdir -p data/run
+	$(BENCH_COMPOSE) up -d --build --wait
+
+.PHONY: bench-capacity
+bench-capacity: ## Compare indexer and shard settings with interleaved rounds (needs bench-up and make data; about 30 min)
+	COMPOSE_FILE=compose.yaml:compose.bench.yaml scripts/bench-capacity.sh 5 1000000
+
+.PHONY: bench-sweep
+bench-sweep: ## End-to-end latency at fixed offered loads (needs bench-up and make data; about 30 min)
+	COMPOSE_FILE=compose.yaml:compose.bench.yaml scripts/bench-sweep.sh 5
+
 .PHONY: ci
 ci: ## Run the GitHub Actions workflow locally with act (one job at a time: parallel jobs race on the shared toolcache)
 	act push --concurrent-jobs 1 -P ubuntu-latest=catthehacker/ubuntu:act-latest --container-architecture linux/$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')

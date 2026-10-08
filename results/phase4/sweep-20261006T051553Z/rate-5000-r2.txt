@@ -1,0 +1,35 @@
+# label: rate-5000-r2  workers=4 shards=1 lines=100000 rate=5000
+# date: 2026-10-06T05:22:56Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs; load: 5.37 5.51 5.75
+# docker: 29.1.3, 10 CPUs, 8217448448 bytes
+$ loggen -in data/loghub/HDFS.log -out bench-rate-5000-r2-1791264169.log -rate 5000 -count 100000  (via_volume=1)
+time="2026-10-06T01:22:57-04:00" level=warning msg="No services to build"
+time="2026-10-06T01:22:57-04:00" level=warning msg="No services to build"
+ Container logplat-loggen-run-93c19bdf0b9e Creating 
+ Container logplat-loggen-run-93c19bdf0b9e Created 
+wrote 100000 lines (14000833 bytes) to /out/bench-rate-5000-r2-1791264169.log in 20s (5000 lines/s)
+{"lines":100000,"bytes":14000833,"elapsed_ns":20000403426,"lines_per_sec":4999.899145534366,"out":"/out/bench-rate-5000-r2-1791264169.log"}
+$ bin/zerolosscheck -file data/run/bench-rate-5000-r2-1791264169.log -source /var/log/ingest/bench-rate-5000-r2-1791264169.log -agent-id agent-1 -index-prefix bench-rate-5000-r2 -json results/phase4/sweep-20261006T051553Z/rate-5000-r2.json
+01:23:18 expecting 100000 lines from data/run/bench-rate-5000-r2-1791264169.log (source /var/log/ingest/bench-rate-5000-r2-1791264169.log, agent agent-1)
+01:23:18 indexed 100000/100000
+{
+  "file": "data/run/bench-rate-5000-r2-1791264169.log",
+  "source": "/var/log/ingest/bench-rate-5000-r2-1791264169.log",
+  "expected": 100000,
+  "indexed_docs_for_source": 100000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T05:22:57.519Z",
+  "last_indexed_at": "2026-10-06T05:23:17.612Z",
+  "ingest_seconds": 20.093,
+  "ingest_lines_per_sec": 4976.857612103718,
+  "latency": {
+    "p50_ms": 118.71700380172051,
+    "p90_ms": 137.82285637367073,
+    "p99_ms": 235,
+    "max_ms": 239
+  },
+  "zero_loss": true
+}
+01:23:19 ZERO LOSS: all 100000 lines indexed; 4977 lines/s from first read to last index

@@ -142,6 +142,51 @@ func (c Checker) Span(ctx context.Context, source string) (first, last time.Time
 	return time.UnixMilli(int64(*out.Aggregations.First.Value)).UTC(), time.UnixMilli(int64(*out.Aggregations.Last.Value)).UTC(), nil
 }
 
+// Latency is the delay from the agent reading a line to the indexer starting
+// the bulk write that holds it (indexed_at minus observed_at), in milliseconds.
+// It spans the agent's batching and spool, the collector, Kafka, and the wait
+// to be polled. It excludes the bulk write itself and OpenSearch's refresh
+// interval, so a line can become searchable later than this says.
+type Latency struct {
+	P50 float64 `json:"p50_ms"`
+	P90 float64 `json:"p90_ms"`
+	P99 float64 `json:"p99_ms"`
+	Max float64 `json:"max_ms"`
+}
+
+// Latency computes percentiles over every document from source. They come from
+// a t-digest with compression 1000, which is near exact at this size.
+func (c Checker) Latency(ctx context.Context, source string) (Latency, error) {
+	script := "doc['indexed_at'].value.toInstant().toEpochMilli() - doc['observed_at'].value.toInstant().toEpochMilli()"
+	body, _ := json.Marshal(map[string]any{
+		"size":  0,
+		"query": map[string]any{"term": map[string]any{"source": source}},
+		"aggs": map[string]any{
+			"lat": map[string]any{"percentiles": map[string]any{
+				"script":   map[string]any{"source": script},
+				"percents": []float64{50, 90, 99},
+				"tdigest":  map[string]any{"compression": 1000},
+			}},
+			"max": map[string]any{"max": map[string]any{"script": map[string]any{"source": script}}},
+		},
+	})
+	var out struct {
+		Aggregations struct {
+			Lat struct {
+				Values map[string]float64 `json:"values"`
+			} `json:"lat"`
+			Max struct {
+				Value float64 `json:"value"`
+			} `json:"max"`
+		} `json:"aggregations"`
+	}
+	if err := osutil.Do(ctx, c.Client, http.MethodPost, c.pattern()+"/_search?allow_no_indices=true", body, &out); err != nil {
+		return Latency{}, err
+	}
+	v := out.Aggregations.Lat.Values
+	return Latency{P50: v["50.0"], P90: v["90.0"], P99: v["99.0"], Max: out.Aggregations.Max.Value}, nil
+}
+
 // Report is the checker's verdict.
 type Report struct {
 	File          string    `json:"file"`
@@ -155,6 +200,7 @@ type Report struct {
 	LastIndexed   time.Time `json:"last_indexed_at"`
 	Seconds       float64   `json:"ingest_seconds"`
 	LinesPerSec   float64   `json:"ingest_lines_per_sec"`
+	Latency       Latency   `json:"latency"`
 	ZeroLoss      bool      `json:"zero_loss"`
 }
 
@@ -209,6 +255,9 @@ wait:
 		first, last, err := c.Span(context.WithoutCancel(ctx), source)
 		if err != nil {
 			return r, fmt.Errorf("span: %w", err)
+		}
+		if r.Latency, err = c.Latency(context.WithoutCancel(ctx), source); err != nil {
+			return r, fmt.Errorf("latency: %w", err)
 		}
 		r.FirstObserved, r.LastIndexed = first, last
 		r.Seconds = last.Sub(first).Seconds()

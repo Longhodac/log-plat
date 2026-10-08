@@ -1,0 +1,8 @@
+A-w1-s1    runs=5   median=  39895 min=  39240 max=  43579
+B-w4-s1    runs=13  median=  69706 min=  61713 max=  77622
+C-w4-s3    runs=13  median=  82988 min=  66872 max=  94859
+D-w1-s3    runs=5   median=  63299 min=  53862 max=  67861
+A-w1-s1 vs B-w4-s1: median ratio 1.75, U=0, p=0.0002
+B-w4-s1 vs C-w4-s3: median ratio 1.19, U=20, p=0.0010
+A-w1-s1 vs D-w1-s3: median ratio 1.59, U=0, p=0.0079
+D-w1-s3 vs C-w4-s3: median ratio 1.31, U=1, p=0.0005

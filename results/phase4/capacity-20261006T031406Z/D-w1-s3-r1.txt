@@ -1,0 +1,38 @@
+# label: D-w1-s3-r1  workers=1 shards=3 lines=1000000 rate=0
+# date: 2026-10-06T03:15:43Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs; load: 8.52 4.87 3.80
+# docker: 29.1.3, 10 CPUs, 8217448448 bytes
+$ bin/loggen -in data/loghub/HDFS.log -out data/run/bench-D-w1-s3-r1.log -rate 0 -count 1000000
+wrote 1000000 lines (139779148 bytes) to data/run/bench-D-w1-s3-r1.log in 62ms (16004428 lines/s)
+{"lines":1000000,"bytes":139779148,"elapsed_ns":62482708,"lines_per_sec":16004427.97709728,"out":"data/run/bench-D-w1-s3-r1.log"}
+$ bin/zerolosscheck -file data/run/bench-D-w1-s3-r1.log -source /var/log/ingest/bench-D-w1-s3-r1.log -agent-id agent-1 -index-prefix bench-d-w1-s3-r1 -json results/phase4/capacity-20261006T031406Z/D-w1-s3-r1.json
+23:15:44 expecting 1000000 lines from data/run/bench-D-w1-s3-r1.log (source /var/log/ingest/bench-D-w1-s3-r1.log, agent agent-1)
+23:15:44 indexed 107/1000000
+23:15:46 indexed 123756/1000000
+23:15:48 indexed 277244/1000000
+23:15:50 indexed 432902/1000000
+23:15:52 indexed 590930/1000000
+23:15:55 indexed 739601/1000000
+23:15:57 indexed 862540/1000000
+23:16:02 indexed 1000000/1000000
+{
+  "file": "data/run/bench-D-w1-s3-r1.log",
+  "source": "/var/log/ingest/bench-D-w1-s3-r1.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:15:44.166Z",
+  "last_indexed_at": "2026-10-06T03:15:58.902Z",
+  "ingest_seconds": 14.736,
+  "ingest_lines_per_sec": 67861.02062975027,
+  "latency": {
+    "p50_ms": 6344.0723146916735,
+    "p90_ms": 11912.64182821392,
+    "p99_ms": 12826.980446927375,
+    "max_ms": 12957
+  },
+  "zero_loss": true
+}
+23:16:06 ZERO LOSS: all 1000000 lines indexed; 67861 lines/s from first read to last index

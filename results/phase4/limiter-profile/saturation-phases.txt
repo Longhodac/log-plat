@@ -1,0 +1,17 @@
+# command: indexer at defaults (4 bulk workers, 1 shard) replaying 2,000,000 lines at full speed through the named volume (compose.bench.yaml)
+# commit: f2218b4 plus uncommitted Phase 4 changes
+# indexed during the window: 2000000 records
+stage                                          samples   mean ms   p50 ms   p99 ms
+logplat_agent_ack_seconds                         1527      32.2     27.5    141.0
+logplat_agent_spool_append_seconds                1527       3.1      2.3     16.0
+logplat_collector_agent_dwell_seconds          2000000    1128.3   1196.3   2112.4
+logplat_collector_publish_seconds                 1527      11.2     10.7     49.7
+logplat_indexer_phase_seconds{phase="poll"}        501      22.0      0.5     11.4
+logplat_indexer_phase_seconds{phase="process"}       501      66.6     55.4    282.1
+logplat_indexer_phase_seconds{phase="commit"}       501       0.6      0.5      3.4
+logplat_indexer_kafka_dwell_seconds            2000000   13907.0  14152.7  30865.3
+logplat_indexer_bulk_seconds                      2004      46.4     42.9    236.0
+logplat_indexer_end_to_end_seconds             2000000   15105.5  14905.3  40245.5
+total poll        11.0 s over 501 cycles
+total process     33.4 s over 501 cycles
+total commit       0.3 s over 501 cycles

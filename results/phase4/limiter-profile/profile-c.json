@@ -1,0 +1,19 @@
+{
+  "file": "data/run/bench-profile-c-1791257214.log",
+  "source": "/var/log/ingest/bench-profile-c-1791257214.log",
+  "expected": 3000000,
+  "indexed_docs_for_source": 3000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:27:04.161Z",
+  "last_indexed_at": "2026-10-06T03:27:44.522Z",
+  "ingest_seconds": 40.361,
+  "ingest_lines_per_sec": 74329.17915809817,
+  "latency": {
+    "p50_ms": 16671.309084832294,
+    "p90_ms": 28410.875675527797,
+    "p99_ms": 31238.35939560292,
+    "max_ms": 31549
+  },
+  "zero_loss": true
+}

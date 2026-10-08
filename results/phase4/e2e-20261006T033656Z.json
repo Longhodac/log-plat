@@ -1,0 +1,19 @@
+{
+  "file": "data/run/replay-20261006T033656Z.log",
+  "source": "/var/log/ingest/replay-20261006T033656Z.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:36:58.203Z",
+  "last_indexed_at": "2026-10-06T03:37:11.337Z",
+  "ingest_seconds": 13.134,
+  "ingest_lines_per_sec": 76138.26709304097,
+  "latency": {
+    "p50_ms": 5945.690065322813,
+    "p90_ms": 10257.567615121896,
+    "p99_ms": 10935.792318638685,
+    "max_ms": 11011
+  },
+  "zero_loss": true
+}

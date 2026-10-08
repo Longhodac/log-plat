@@ -1,0 +1,35 @@
+{
+  "scenario": "kill-collector",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 8193,
+  "written_at_heal": 37653,
+  "indexed_at_heal": 8193,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.579027583,
+  "heal_seconds": 1.272043,
+  "seconds_from_last_write_to_all_indexed": 3.174408917,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-collector-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-kill-collector-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:45:51.865Z",
+    "last_indexed_at": "2026-10-06T05:46:11.444Z",
+    "ingest_seconds": 19.579,
+    "ingest_lines_per_sec": 3064.5078911078194,
+    "latency": {
+      "p50_ms": 1076.8477656979287,
+      "p90_ms": 8413.7,
+      "p99_ms": 9357,
+      "max_ms": 9494
+    },
+    "zero_loss": true
+  }
+}

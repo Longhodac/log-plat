@@ -1,0 +1,19 @@
+{
+  "file": "data/run/bench-D-w1-s3-r1.log",
+  "source": "/var/log/ingest/bench-D-w1-s3-r1.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:15:44.166Z",
+  "last_indexed_at": "2026-10-06T03:15:58.902Z",
+  "ingest_seconds": 14.736,
+  "ingest_lines_per_sec": 67861.02062975027,
+  "latency": {
+    "p50_ms": 6344.0723146916735,
+    "p90_ms": 11912.64182821392,
+    "p99_ms": 12826.980446927375,
+    "max_ms": 12957
+  },
+  "zero_loss": true
+}

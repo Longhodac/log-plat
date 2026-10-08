@@ -1,0 +1,35 @@
+{
+  "scenario": "net-collector-ack-loss",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 2883,
+  "written_at_heal": 36330,
+  "indexed_at_heal": 2883,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.027596042,
+  "heal_seconds": 0.044948875,
+  "seconds_from_last_write_to_all_indexed": 2.668487208,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-net-collector-ack-loss-20261006T055712Z.log",
+    "source": "/var/log/ingest/chaos-net-collector-ack-loss-20261006T055712Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:57:13.629Z",
+    "last_indexed_at": "2026-10-06T05:57:34.127Z",
+    "ingest_seconds": 20.498,
+    "ingest_lines_per_sec": 2927.114840472241,
+    "latency": {
+      "p50_ms": 577.2854883187763,
+      "p90_ms": 930.2948113207547,
+      "p99_ms": 967.9824561403509,
+      "max_ms": 1025
+    },
+    "zero_loss": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "scenario": "kill-kafka",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12000,
+  "indexed_at_inject": 4560,
+  "written_at_heal": 37710,
+  "indexed_at_heal": 4560,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.497326708,
+  "heal_seconds": 18.999692042,
+  "seconds_from_last_write_to_all_indexed": 0.968063917,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-kafka-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-kill-kafka-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:46:15.861Z",
+    "last_indexed_at": "2026-10-06T05:46:44.769Z",
+    "ingest_seconds": 28.908,
+    "ingest_lines_per_sec": 2075.5500207555,
+    "latency": {
+      "p50_ms": 9041.815499927932,
+      "p90_ms": 9369,
+      "p99_ms": 9533,
+      "max_ms": 9534
+    },
+    "zero_loss": true
+  }
+}

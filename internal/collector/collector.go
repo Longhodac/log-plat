@@ -114,6 +114,9 @@ func (s *Server) start(ctx context.Context, svc string, req *logplatv1.IngestReq
 	ack := &logplatv1.IngestResponse{Seq: req.GetSeq()}
 	valid := make([]*logplatv1.LogEntry, 0, len(req.GetEntries()))
 	for _, e := range req.GetEntries() {
+		if e.GetObservedAt().IsValid() {
+			agentDwell.Observe(now.Sub(e.GetObservedAt().AsTime()).Seconds())
+		}
 		if reason := Validate(e, now); reason != "" {
 			ack.Rejected = append(ack.Rejected, &logplatv1.Rejection{Id: e.GetId(), Reason: reason})
 			entriesTotal.WithLabelValues(svc, "rejected").Inc()

@@ -111,6 +111,24 @@ Each service handles SIGTERM:
 - The indexer finishes and commits its current batch.
 - The query API drains its HTTP connections.
 
+## Parallel bulk writes and what the benchmarks changed (Phase 4)
+
+**Decision.** The indexer splits each poll into `INDEXER_BULK_WORKERS` chunks and sends them to OpenSearch at once. It still commits offsets once, after every chunk is indexed or dead-lettered, so the rule from the indexer section is unchanged. The default is 4.
+
+**Why.** The measured limiter was the indexer's serial cycle. One bulk request at a time capped ingest near 40,000 lines/s, while OpenSearch used about one core of ten. Four workers reached about 70,000 (1.75x, 13 runs against 5). The alternative of running more indexer replicas does not help here, because the collector keys records by service, so one service's logs share one Kafka partition and one consumer reads them.
+
+**Why it is safe.** Every document has a fixed `_id`, so writing chunks in any order, or writing one twice, converges on the same documents. A chunk that fails transiently retries on its own. One that fails permanently is dead-lettered without holding up the others. None of the chunks is acknowledged to Kafka until all are done. The cost is more memory per poll in flight and a bulk queue on OpenSearch that is four times deeper.
+
+**Shards.** Three shards on top of four workers added another 19% (p = 0.001), but I left the default at one shard. More shards mean every query searches more of them, and I did not measure that. `INDEX_SHARDS` is the knob.
+
+**Limits that remain.** The indexer still finishes writing one poll before it starts the next. At full speed it spent essentially all its busy time in that write phase. Fetching the next poll while the current one writes is the next step, and it would need offsets committed in order.
+
+**Stage latency metrics.** The collector records how long each entry waited between the agent reading it and the collector receiving it (`logplat_collector_agent_dwell_seconds`). The indexer records how long each record sat in Kafka before being polled (`logplat_indexer_kafka_dwell_seconds`), and how long each poll cycle spends polling, writing and committing (`logplat_indexer_phase_seconds`). Together with the existing publish and bulk histograms they show where a line waits. The agent's 200 ms linger turned out to be the main contributor to latency at low rates. Lowering `AGENT_BATCH_LINGER` to 50 ms cut the p50 at 5,000 lines/s from 119 ms to 66 ms, at the cost of smaller batches.
+
+**What the latency number means.** End-to-end latency in the results is the time from the agent reading a line to the indexer starting the write that holds it. A line is searchable only after OpenSearch's next refresh, up to `INDEX_REFRESH_INTERVAL` (5 s) later.
+
+**The query cache, measured.** It gives large gains on repeated searches and none on distinct ones, where each miss adds a Redis round trip. It trades staleness for speed, so it suits dashboards that refresh the same query.
+
 ## Redis: rate limits and the search cache (Phase 3)
 
 Redis is optional in both places. With the limit and TTL settings at 0, the services never connect to it. Every Redis call fails open, because the limiter and the cache protect the pipeline and must never be the reason it stops.
@@ -137,7 +155,7 @@ The chaos suite in `chaos/` runs against the real Compose stack. It writes a uni
 
 **Redelivery is exercised on purpose, and counted.** Most faults never cause a duplicate, because a sender that never got an ack simply resends something nobody stored. A duplicate appears only when a write succeeded and its acknowledgement or offset commit did not. Two scenarios are built to hit that window and assert that OpenSearch absorbed redundant writes. The count is `index_total` on the `logs-*` primaries minus the lines written, and it is greater than zero only if the same ID was indexed more than once.
 
-- *Collector acks lost.* A Toxiproxy `reset_peer` on the downstream direction drops the connection after 700 ms, so some batches reach Kafka and their acks never reach the agent. The agent resends them.
+- *Collector acks lost.* The scenario delays acks by 300 ms, then watches two counters until the collector has published entries to Kafka that the agent has not yet seen acknowledged, and cuts the agent's connection at that moment. Those entries are in Kafka, the agent still holds them, and it resends them. A first version used a fixed-time TCP reset and produced duplicates in only 5 of 14 reruns, so the test failed at random. Delaying the acks did not help (2 of 8). Watching for the window did (8 of 8).
 - *Indexer killed after the write, before the commit.* OpenSearch responses are delayed by three seconds, and the test kills the indexer when OpenSearch has performed a write that the indexer has not yet heard back about. Kafka redelivers those records to the restarted indexer. An earlier version killed after a fixed delay and missed the window two times in three, so the scenario now watches for the window instead.
 
 **Two changes came out of it.**
@@ -157,4 +175,3 @@ The chaos suite in `chaos/` runs against the real Compose stack. It writes a uni
 
 - TLS between agent and collector, and on Kafka and OpenSearch. The local stack disables OpenSearch security.
 - Kafka replication. The local broker has `replication.factor=1`, so `acks=all` means one replica.
-- Load benchmarks (Phase 4).

@@ -4,6 +4,7 @@ package chaos
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	toxiproxy "github.com/Shopify/toxiproxy/v2/client"
@@ -132,7 +133,7 @@ func scenarios() []scenario {
 	// Faults that make a component deliver the same entries twice. Killing a
 	// process or cutting a link between a write and its acknowledgement forces
 	// a resend, and the duplicates must collapse in OpenSearch.
-	i, h = proxyToxicOn("collector", "reset_peer", []string{"downstream"}, toxiproxy.Attributes{"timeout": 700})
+	i, h = ackLoss()
 	all = append(all, scenario{name: "net-collector-ack-loss", wantRedundant: true, hold: 8 * time.Second, inject: i, heal: h})
 	all = append(all, killIndexerAfterWriteBeforeCommit())
 	i, h = crashLoop("collector", 3)
@@ -191,4 +192,59 @@ func killIndexerAfterWriteBeforeCommit() scenario {
 		},
 		heal: func(context.Context, *Env) error { return nil },
 	}
+}
+
+// ackLoss cuts the agent's connection to the collector at a moment when the
+// collector has published entries to Kafka that the agent has not yet seen
+// acknowledged. Those entries are in Kafka, the agent still holds them, and it
+// must send them again, so OpenSearch has to absorb the repeats.
+//
+// A fixed-time reset hit that window in only about half of the runs, and adding
+// a delay to the acks did not fix it, so the scenario watches the two counters
+// for the window instead. Delaying acks by 300 ms keeps the window open long
+// enough to catch.
+func ackLoss() (inject, heal func(context.Context, *Env) error) {
+	slow, unslow := proxyToxicOn("collector", "latency", []string{"downstream"}, toxiproxy.Attributes{"latency": 300})
+	return func(ctx context.Context, e *Env) error {
+			gap := func() (float64, error) {
+				pub, err := e.metric(ctx, "collector", "logplat_collector_entries_total", `result="published"`)
+				if err != nil {
+					return 0, err
+				}
+				acked, err := e.metric(ctx, "agent", "logplat_agent_entries_acked_total", "")
+				return pub - acked, err
+			}
+			base, err := gap()
+			if err != nil {
+				return err
+			}
+			if err := slow(ctx, e); err != nil {
+				return err
+			}
+			deadline := time.Now().Add(30 * time.Second)
+			for {
+				g, err := gap()
+				if err != nil {
+					return err
+				}
+				if g > base {
+					break
+				}
+				if time.Now().After(deadline) {
+					return errors.New("never saw published entries waiting for their ack")
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+			p, err := e.tox.Proxy("collector")
+			if err != nil {
+				return err
+			}
+			if err := p.Disable(); err != nil {
+				return err
+			}
+			time.Sleep(300 * time.Millisecond)
+			return p.Enable()
+		}, func(ctx context.Context, e *Env) error {
+			return unslow(ctx, e)
+		}
 }

@@ -1,0 +1,19 @@
+{
+  "file": "data/run/bench-B-w4-s1-r6-1791257614.log",
+  "source": "/var/log/ingest/bench-B-w4-s1-r6-1791257614.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:33:40.199Z",
+  "last_indexed_at": "2026-10-06T03:33:53.082Z",
+  "ingest_seconds": 12.883,
+  "ingest_lines_per_sec": 77621.67197081426,
+  "latency": {
+    "p50_ms": 5679.196469295247,
+    "p90_ms": 10119.929562373516,
+    "p99_ms": 10936.268706797964,
+    "max_ms": 11062
+  },
+  "zero_loss": true
+}

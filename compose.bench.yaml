@@ -1,0 +1,42 @@
+# Benchmark overlay: two query APIs over the same OpenSearch, one with the
+# search cache and one without, and no rate limit on either, so the two can be
+# measured alternately in the same round.
+# Use with: docker compose -f compose.yaml -f compose.bench.yaml ...
+# The agent reads its input from a named volume, not the host bind mount. On
+# Docker Desktop for Mac a bind-mounted file that the host keeps appending shows
+# up inside the container late and in bursts, which looks like pipeline queueing
+# when you measure latency at a steady rate. A named volume lives inside the
+# Docker VM, so a writer container and the agent see the same bytes at once.
+volumes:
+  ingest:
+
+services:
+  agent:
+    volumes:
+      - ingest:/var/log/ingest:ro
+
+  loggen:
+    build: { context: ., args: { SERVICE: loggen } }
+    image: logplat/loggen:dev
+    user: "0:0"
+    profiles: ["tools"]
+    volumes:
+      - ingest:/out
+      - ./data/loghub:/in:ro
+
+  query-api:
+    environment:
+      QUERY_RATE_LIMIT: "0"
+      QUERY_CACHE_TTL: ${BENCH_CACHE_TTL:-30s}
+
+  query-api-nocache:
+    image: logplat/queryapi:dev
+    depends_on:
+      opensearch: { condition: service_healthy }
+    ports:
+      - "8081:8080"
+    environment:
+      OPENSEARCH_ADDRS: http://opensearch:9200
+      QUERY_API_KEYS: ${QUERY_API_KEYS:-dev-query-key:ops}
+      QUERY_RATE_LIMIT: "0"
+      QUERY_CACHE_TTL: "0"

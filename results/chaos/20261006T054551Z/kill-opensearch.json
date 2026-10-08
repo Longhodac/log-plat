@@ -1,0 +1,35 @@
+{
+  "scenario": "kill-opensearch",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 120,
+  "written_at_heal": 38281,
+  "indexed_at_heal": 120,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.755363625,
+  "heal_seconds": 20.853174125,
+  "seconds_from_last_write_to_all_indexed": 5.299122375,
+  "indexer_indexed_counter_delta": 60000,
+  "indexer_counter_reset_by_restart": false,
+  "redundant_writes_absorbed": null,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-opensearch-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-kill-opensearch-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:47:33.629Z",
+    "last_indexed_at": "2026-10-06T05:48:10.955Z",
+    "ingest_seconds": 37.326,
+    "ingest_lines_per_sec": 1607.4586079408455,
+    "latency": {
+      "p50_ms": 16515.983532975264,
+      "p90_ms": 16789,
+      "p99_ms": 16894,
+      "max_ms": 16894
+    },
+    "zero_loss": true
+  }
+}

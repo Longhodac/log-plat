@@ -1,0 +1,19 @@
+{
+  "file": "data/run/bench-rate-max-r1-1791263932.log",
+  "source": "/var/log/ingest/bench-rate-max-r1-1791263932.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T05:19:01.515Z",
+  "last_indexed_at": "2026-10-06T05:19:17.488Z",
+  "ingest_seconds": 15.973,
+  "ingest_lines_per_sec": 62605.647029362044,
+  "latency": {
+    "p50_ms": 7215.76628914135,
+    "p90_ms": 11678.272217997232,
+    "p99_ms": 12318.741694880167,
+    "max_ms": 12378
+  },
+  "zero_loss": true
+}

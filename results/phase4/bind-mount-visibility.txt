@@ -1,0 +1,22 @@
+# A file the host appends to at 20,000 lines/s (loggen), and the size a container sees through a bind mount, sampled every 0.25 s (every other sample shown)
+# commit: f2218b4 plus uncommitted Phase 4 changes; Docker 29.1.3 on Darwin arm64
+33.905 host has 	34. container sees 402059
+34.431 host has 1358198	34. container sees 402059
+34.962 host has 2840546	35. container sees 402059
+35.487 host has 4325831	35. container sees 402059
+36.019 host has 5810831	36. container sees 402059
+36.556 host has 7321748	36. container sees 402059
+37.086 host has 8801539	37. container sees 402059
+37.604 host has 10226875	37. container sees 402059
+38.132 host has 11709585	38. container sees 402059
+38.668 host has 13218593	38. container sees 402059
+39.198 host has 14700782	39. container sees 402059
+39.730 host has 16186280	39. container sees 402059
+40.266 host has 17698044	40. container sees 402059
+40.804 host has 19180389	40. container sees 402059
+41.340 host has 20692187	41. container sees 402059
+41.878 host has 22203110	41. container sees 402059
+42.417 host has 23713680	42. container sees 402059
+42.956 host has 25227923	42. container sees 402059
+43.491 host has 26718369	43. container sees 402059
+44.022 host has 28008761	43. container sees 402059

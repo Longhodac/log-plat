@@ -1,0 +1,16 @@
+# after C-w4-s3-r8, 03:36:18Z
+logplat_agent_corrupt_records_total 0
+logplat_agent_spool_full_total 0
+logplat_agent_stream_errors_total 0
+logplat_collector_auth_failures_total 0
+logplat_collector_publish_errors_total 0
+logplat_collector_auth_failures_total 0
+logplat_collector_publish_errors_total 0
+logplat_indexer_bulk_retries_total 0
+logplat_indexer_commit_errors_total 0
+logplat_indexer_records_total{result="indexed"} 1.02e+06
+logplat_agent_corrupt_records_total 0
+logplat_agent_spool_full_total 0
+logplat_agent_stream_errors_total 11
+logplat_indexer_bulk_seconds_sum 28.063203977000047
+logplat_indexer_bulk_seconds_count 1044

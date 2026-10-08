@@ -1,0 +1,37 @@
+# command: scripts/e2e.sh 1000000 0
+# date: 2026-10-06T03:36:56Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs
+# docker: 29.1.3, 10 CPUs, 8217448448 bytes memory
+# input: data/loghub/HDFS.log
+$ bin/loggen -in data/loghub/HDFS.log -out data/run/replay-20261006T033656Z.log -rate 0 -count 1000000
+wrote 1000000 lines (139779148 bytes) to data/run/replay-20261006T033656Z.log in 60ms (16596569 lines/s)
+{"lines":1000000,"bytes":139779148,"elapsed_ns":60253417,"lines_per_sec":16596569.120718913,"out":"data/run/replay-20261006T033656Z.log"}
+$ bin/zerolosscheck -file data/run/replay-20261006T033656Z.log -source /var/log/ingest/replay-20261006T033656Z.log -agent-id agent-1 -json results/e2e-20261006T033656Z.json
+23:36:57 expecting 1000000 lines from data/run/replay-20261006T033656Z.log (source /var/log/ingest/replay-20261006T033656Z.log, agent agent-1)
+23:36:57 indexed 0/1000000
+23:36:59 indexed 83651/1000000
+23:37:02 indexed 238387/1000000
+23:37:07 indexed 639397/1000000
+23:37:09 indexed 827003/1000000
+23:37:17 indexed 1000000/1000000
+{
+  "file": "data/run/replay-20261006T033656Z.log",
+  "source": "/var/log/ingest/replay-20261006T033656Z.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T03:36:58.203Z",
+  "last_indexed_at": "2026-10-06T03:37:11.337Z",
+  "ingest_seconds": 13.134,
+  "ingest_lines_per_sec": 76138.26709304097,
+  "latency": {
+    "p50_ms": 5945.690065322813,
+    "p90_ms": 10257.567615121896,
+    "p99_ms": 10935.792318638685,
+    "max_ms": 11011
+  },
+  "zero_loss": true
+}
+23:37:24 ZERO LOSS: all 1000000 lines indexed; 76138 lines/s from first read to last index

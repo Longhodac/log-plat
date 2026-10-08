@@ -15,10 +15,12 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 
 	logplatv1 "github.com/Longhodac/log-plat/gen/logplat/v1"
@@ -32,6 +34,11 @@ type Config struct {
 	IndexPrefix string
 	DLQTopic    string
 	MaxPoll     int
+	// BulkWorkers is how many _bulk requests one poll sends at once. A poll's
+	// documents are split into that many chunks. Offsets are still committed
+	// once, after every chunk is done, so the delivery guarantee is unchanged.
+	// Zero or one sends a single request.
+	BulkWorkers int
 	Backoff     backoff.Policy
 	// BulkTimeout bounds one _bulk request. A request that hangs on a dead
 	// connection is abandoned and retried instead of wedging the indexer.
@@ -75,6 +82,7 @@ func (ix *Indexer) Run(ctx context.Context) error {
 	defer ix.Kafka.AllowRebalance()
 
 	for {
+		pollStart := time.Now()
 		fetches := ix.Kafka.PollRecords(ctx, ix.Cfg.MaxPoll)
 		if fetches.IsClientClosed() || ctx.Err() != nil {
 			return nil
@@ -89,6 +97,8 @@ func (ix *Indexer) Run(ctx context.Context) error {
 			ix.Kafka.AllowRebalance()
 			continue
 		}
+		phaseSeconds.WithLabelValues("poll").Observe(time.Since(pollStart).Seconds())
+		processStart := time.Now()
 		if err := ix.process(workCtx, recs); err != nil {
 			if workCtx.Err() != nil {
 				ix.Log.Warn("shutdown grace expired; uncommitted records will be redelivered", "records", len(recs))
@@ -96,7 +106,11 @@ func (ix *Indexer) Run(ctx context.Context) error {
 			}
 			return err
 		}
-		if err := ix.Kafka.CommitRecords(workCtx, recs...); err != nil {
+		phaseSeconds.WithLabelValues("process").Observe(time.Since(processStart).Seconds())
+		commitStart := time.Now()
+		err := ix.Kafka.CommitRecords(workCtx, recs...)
+		phaseSeconds.WithLabelValues("commit").Observe(time.Since(commitStart).Seconds())
+		if err != nil {
 			// The records are in OpenSearch; a failed commit only means they
 			// will be redelivered and overwritten in place.
 			commitErrors.Inc()
@@ -119,6 +133,7 @@ func (ix *Indexer) process(ctx context.Context, recs []*kgo.Record) error {
 	var docs []pendingDoc
 	var dead []*kgo.Record
 	for _, r := range recs {
+		kafkaDwell.Observe(max(now.Sub(r.Timestamp), 0).Seconds())
 		line, obs, reason := ix.encode(r, now)
 		if reason != "" {
 			dead = append(dead, deadLetter(ix.Cfg.DLQTopic, r, reason))
@@ -127,7 +142,7 @@ func (ix *Indexer) process(ctx context.Context, recs []*kgo.Record) error {
 		docs = append(docs, pendingDoc{rec: r, line: line, obs: obs})
 	}
 
-	permanent, err := ix.index(ctx, docs)
+	permanent, err := ix.indexParallel(ctx, docs)
 	if err != nil {
 		return err
 	}
@@ -139,6 +154,34 @@ func (ix *Indexer) process(ctx context.Context, recs []*kgo.Record) error {
 		recordsTotal.WithLabelValues("dead_lettered").Add(float64(len(dead)))
 	}
 	return nil
+}
+
+// indexParallel splits docs into BulkWorkers chunks and indexes them at once.
+// Each chunk retries independently, and the call returns only when every chunk
+// has either been indexed or dead-lettered, so the caller can commit after it.
+// Concurrent writes are safe because every document has a fixed _id.
+func (ix *Indexer) indexParallel(ctx context.Context, docs []pendingDoc) ([]*kgo.Record, error) {
+	workers := max(ix.Cfg.BulkWorkers, 1)
+	if workers == 1 || len(docs) < 2 {
+		return ix.index(ctx, docs)
+	}
+	size := (len(docs) + workers - 1) / workers
+	var (
+		g    errgroup.Group
+		mu   sync.Mutex
+		dead []*kgo.Record
+	)
+	for start := 0; start < len(docs); start += size {
+		chunk := docs[start:min(start+size, len(docs))]
+		g.Go(func() error {
+			d, err := ix.index(ctx, chunk)
+			mu.Lock()
+			dead = append(dead, d...)
+			mu.Unlock()
+			return err
+		})
+	}
+	return dead, g.Wait()
 }
 
 // encode turns a Kafka record into a bulk index line, or a reason it cannot be one.

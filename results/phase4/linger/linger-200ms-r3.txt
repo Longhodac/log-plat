@@ -1,0 +1,35 @@
+# label: linger-200ms-r3  workers=4 shards=1 lines=100000 rate=5000
+# date: 2026-10-06T05:39:36Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs; load: 3.41 4.82 5.59
+# docker: 29.1.3, 10 CPUs, 8217448448 bytes
+$ loggen -in data/loghub/HDFS.log -out bench-linger-200ms-r3-1791265169.log -rate 5000 -count 100000  (via_volume=1)
+time="2026-10-06T01:39:37-04:00" level=warning msg="No services to build"
+time="2026-10-06T01:39:37-04:00" level=warning msg="No services to build"
+ Container logplat-loggen-run-dc50dde23cf8 Creating 
+ Container logplat-loggen-run-dc50dde23cf8 Created 
+wrote 100000 lines (14000833 bytes) to /out/bench-linger-200ms-r3-1791265169.log in 20.003s (4999 lines/s)
+{"lines":100000,"bytes":14000833,"elapsed_ns":20002782050,"lines_per_sec":4999.304584234072,"out":"/out/bench-linger-200ms-r3-1791265169.log"}
+$ bin/zerolosscheck -file data/run/bench-linger-200ms-r3-1791265169.log -source /var/log/ingest/bench-linger-200ms-r3-1791265169.log -agent-id agent-1 -index-prefix bench-linger-200ms-r3 -json results/phase4/linger/linger-200ms-r3.json
+01:39:58 expecting 100000 lines from data/run/bench-linger-200ms-r3-1791265169.log (source /var/log/ingest/bench-linger-200ms-r3-1791265169.log, agent agent-1)
+01:39:58 indexed 100000/100000
+{
+  "file": "data/run/bench-linger-200ms-r3-1791265169.log",
+  "source": "/var/log/ingest/bench-linger-200ms-r3-1791265169.log",
+  "expected": 100000,
+  "indexed_docs_for_source": 100000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T05:39:39.124Z",
+  "last_indexed_at": "2026-10-06T05:39:57.711Z",
+  "ingest_seconds": 18.587,
+  "ingest_lines_per_sec": 5380.104374024856,
+  "latency": {
+    "p50_ms": 118.61311316260216,
+    "p90_ms": 183.85399825892304,
+    "p99_ms": 252.23018108651908,
+    "max_ms": 278
+  },
+  "zero_loss": true
+}
+01:39:59 ZERO LOSS: all 100000 lines indexed; 5380 lines/s from first read to last index

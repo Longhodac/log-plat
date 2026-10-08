@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -192,5 +193,84 @@ func TestHungBulkRequestIsAbandonedAndRetried(t *testing.T) {
 	}
 	if b.calls != 2 {
 		t.Errorf("%d bulk calls, want 2 (the hung one, then the retry)", b.calls)
+	}
+}
+
+// concurrencyBulk answers every item 201, except ids in reject which get 400,
+// and records how many requests were in flight at once.
+type concurrencyBulk struct {
+	mu       sync.Mutex
+	inflight int
+	maxSeen  int
+	sent     map[string]int
+	reject   map[string]bool
+}
+
+func (b *concurrencyBulk) Bulk(_ context.Context, body []byte) ([]ItemResult, error) {
+	b.mu.Lock()
+	b.inflight++
+	b.maxSeen = max(b.maxSeen, b.inflight)
+	b.mu.Unlock()
+	time.Sleep(50 * time.Millisecond)
+
+	var out []ItemResult
+	b.mu.Lock()
+	for _, line := range bytes.Split(bytes.TrimSpace(body), []byte("\n")) {
+		var a struct {
+			Index struct {
+				ID string `json:"_id"`
+			} `json:"index"`
+		}
+		if json.Unmarshal(line, &a) == nil && a.Index.ID != "" {
+			b.sent[a.Index.ID]++
+			st := 201
+			if b.reject[a.Index.ID] {
+				st = 400
+			}
+			out = append(out, ItemResult{Status: st, Error: "x"})
+		}
+	}
+	b.inflight--
+	b.mu.Unlock()
+	return out, nil
+}
+
+func TestParallelBulkSendsEachDocOnceAtOnceAndDeadLettersOnlyTheBadOne(t *testing.T) {
+	const n = 40
+	ix := newIndexer(nil)
+	var docs []pendingDoc
+	reject := map[string]bool{}
+	for i := range n {
+		r := record(t, int64(i))
+		line, obs, reason := ix.encode(r, time.Now())
+		if reason != "" {
+			t.Fatal(reason)
+		}
+		docs = append(docs, pendingDoc{rec: r, line: line, obs: obs})
+		if i == 17 {
+			reject[logid.New("a", "/f", 0, 17)] = true
+		}
+	}
+	b := &concurrencyBulk{sent: map[string]int{}, reject: reject}
+	ix.OS = b
+	ix.Cfg.BulkWorkers = 4
+
+	dead, err := ix.indexParallel(context.Background(), docs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b.maxSeen < 2 {
+		t.Errorf("at most %d bulk requests in flight, want concurrent requests with BulkWorkers=4", b.maxSeen)
+	}
+	if len(b.sent) != n {
+		t.Fatalf("%d distinct docs sent, want %d", len(b.sent), n)
+	}
+	for id, c := range b.sent {
+		if c != 1 {
+			t.Errorf("doc %s sent %d times, want once", id, c)
+		}
+	}
+	if len(dead) != 1 || string(dead[0].Headers[3].Value) != "17" {
+		t.Errorf("dead letters = %d, want exactly the rejected doc at offset 17", len(dead))
 	}
 }

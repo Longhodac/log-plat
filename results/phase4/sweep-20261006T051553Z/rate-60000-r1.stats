@@ -1,0 +1,109 @@
+--- 05:18:14
+logplat-agent-1 cpu=54.29% mem=28.93MiB / 7.653GiB
+logplat-collector-1 cpu=0.81% mem=84.6MiB / 7.653GiB
+logplat-indexer-1 cpu=0.18% mem=32.18MiB / 7.653GiB
+logplat-kafka-1 cpu=9.23% mem=1.088GiB / 7.653GiB
+logplat-opensearch-1 cpu=224.78% mem=1.936GiB / 7.653GiB
+--- 05:18:16
+logplat-agent-1 cpu=21.00% mem=33.07MiB / 7.653GiB
+logplat-collector-1 cpu=12.83% mem=79.2MiB / 7.653GiB
+logplat-indexer-1 cpu=52.10% mem=27.61MiB / 7.653GiB
+logplat-kafka-1 cpu=58.93% mem=1.134GiB / 7.653GiB
+logplat-opensearch-1 cpu=171.34% mem=1.939GiB / 7.653GiB
+--- 05:18:18
+logplat-agent-1 cpu=24.51% mem=30.52MiB / 7.653GiB
+logplat-collector-1 cpu=14.62% mem=68.12MiB / 7.653GiB
+logplat-indexer-1 cpu=53.92% mem=32.82MiB / 7.653GiB
+logplat-kafka-1 cpu=5.22% mem=1.088GiB / 7.653GiB
+logplat-opensearch-1 cpu=203.80% mem=1.943GiB / 7.653GiB
+--- 05:18:20
+logplat-agent-1 cpu=18.32% mem=30.61MiB / 7.653GiB
+logplat-collector-1 cpu=12.48% mem=81.14MiB / 7.653GiB
+logplat-indexer-1 cpu=42.12% mem=25.15MiB / 7.653GiB
+logplat-kafka-1 cpu=3.90% mem=1.088GiB / 7.653GiB
+logplat-opensearch-1 cpu=166.18% mem=1.945GiB / 7.653GiB
+--- 05:18:22
+logplat-agent-1 cpu=29.45% mem=32MiB / 7.653GiB
+logplat-collector-1 cpu=15.98% mem=80.17MiB / 7.653GiB
+logplat-indexer-1 cpu=51.28% mem=41.43MiB / 7.653GiB
+logplat-kafka-1 cpu=34.65% mem=1.124GiB / 7.653GiB
+logplat-opensearch-1 cpu=236.08% mem=1.949GiB / 7.653GiB
+--- 05:18:24
+logplat-agent-1 cpu=19.20% mem=27.97MiB / 7.653GiB
+logplat-collector-1 cpu=12.60% mem=68.3MiB / 7.653GiB
+logplat-indexer-1 cpu=43.49% mem=46.92MiB / 7.653GiB
+logplat-kafka-1 cpu=4.16% mem=1.089GiB / 7.653GiB
+logplat-opensearch-1 cpu=210.90% mem=1.953GiB / 7.653GiB
+--- 05:18:26
+logplat-agent-1 cpu=30.78% mem=29.02MiB / 7.653GiB
+logplat-collector-1 cpu=19.29% mem=62.93MiB / 7.653GiB
+logplat-indexer-1 cpu=47.87% mem=38.51MiB / 7.653GiB
+logplat-kafka-1 cpu=7.07% mem=1.071GiB / 7.653GiB
+logplat-opensearch-1 cpu=332.88% mem=1.958GiB / 7.653GiB
+--- 05:18:28
+logplat-agent-1 cpu=55.92% mem=28.77MiB / 7.653GiB
+logplat-collector-1 cpu=29.22% mem=77.27MiB / 7.653GiB
+logplat-indexer-1 cpu=41.60% mem=50.53MiB / 7.653GiB
+logplat-kafka-1 cpu=22.46% mem=1.076GiB / 7.653GiB
+logplat-opensearch-1 cpu=270.15% mem=1.957GiB / 7.653GiB
+--- 05:18:30
+logplat-agent-1 cpu=40.30% mem=29.21MiB / 7.653GiB
+logplat-collector-1 cpu=20.59% mem=80.86MiB / 7.653GiB
+logplat-indexer-1 cpu=59.17% mem=38.85MiB / 7.653GiB
+logplat-kafka-1 cpu=34.77% mem=1.073GiB / 7.653GiB
+logplat-opensearch-1 cpu=289.85% mem=1.96GiB / 7.653GiB
+--- 05:18:32
+logplat-agent-1 cpu=63.61% mem=35.6MiB / 7.653GiB
+logplat-collector-1 cpu=32.41% mem=78.9MiB / 7.653GiB
+logplat-indexer-1 cpu=57.68% mem=38.8MiB / 7.653GiB
+logplat-kafka-1 cpu=14.95% mem=1.073GiB / 7.653GiB
+logplat-opensearch-1 cpu=374.36% mem=1.964GiB / 7.653GiB
+--- 05:18:34
+logplat-agent-1 cpu=0.35% mem=30.79MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.11MiB / 7.653GiB
+logplat-indexer-1 cpu=41.01% mem=38.23MiB / 7.653GiB
+logplat-kafka-1 cpu=2.01% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=179.38% mem=1.966GiB / 7.653GiB
+--- 05:18:36
+logplat-agent-1 cpu=0.30% mem=30.66MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.11MiB / 7.653GiB
+logplat-indexer-1 cpu=0.53% mem=38.29MiB / 7.653GiB
+logplat-kafka-1 cpu=84.05% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=18.90% mem=2.026GiB / 7.653GiB
+--- 05:18:38
+logplat-agent-1 cpu=0.26% mem=28.46MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.12MiB / 7.653GiB
+logplat-indexer-1 cpu=0.00% mem=38.29MiB / 7.653GiB
+logplat-kafka-1 cpu=1.01% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=46.93% mem=2.027GiB / 7.653GiB
+--- 05:18:40
+logplat-agent-1 cpu=0.21% mem=28.21MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.12MiB / 7.653GiB
+logplat-indexer-1 cpu=0.18% mem=38.43MiB / 7.653GiB
+logplat-kafka-1 cpu=0.85% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=129.10% mem=2.025GiB / 7.653GiB
+--- 05:18:42
+logplat-agent-1 cpu=0.99% mem=28.65MiB / 7.653GiB
+logplat-collector-1 cpu=6.51% mem=85.62MiB / 7.653GiB
+logplat-indexer-1 cpu=0.00% mem=38.48MiB / 7.653GiB
+logplat-kafka-1 cpu=118.37% mem=1.149GiB / 7.653GiB
+logplat-opensearch-1 cpu=112.88% mem=2.025GiB / 7.653GiB
+--- 05:18:44
+logplat-agent-1 cpu=0.19% mem=28.65MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.13MiB / 7.653GiB
+logplat-indexer-1 cpu=0.40% mem=39.02MiB / 7.653GiB
+logplat-kafka-1 cpu=0.92% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=101.17% mem=2.025GiB / 7.653GiB
+--- 05:18:46
+logplat-agent-1 cpu=0.14% mem=28.65MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.12MiB / 7.653GiB
+logplat-indexer-1 cpu=0.56% mem=39.18MiB / 7.653GiB
+logplat-kafka-1 cpu=1.49% mem=1.072GiB / 7.653GiB
+logplat-opensearch-1 cpu=105.93% mem=2.025GiB / 7.653GiB
+--- 05:18:48
+logplat-agent-1 cpu=0.18% mem=26.36MiB / 7.653GiB
+logplat-collector-1 cpu=0.00% mem=85.12MiB / 7.653GiB
+logplat-indexer-1 cpu=0.00% mem=39.18MiB / 7.653GiB
+logplat-kafka-1 cpu=113.18% mem=1.151GiB / 7.653GiB
+logplat-opensearch-1 cpu=107.66% mem=2.025GiB / 7.653GiB
+--- 05:18:50

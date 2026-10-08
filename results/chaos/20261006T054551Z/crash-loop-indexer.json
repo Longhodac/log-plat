@@ -1,0 +1,35 @@
+{
+  "scenario": "crash-loop-indexer",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12002,
+  "indexed_at_inject": 3962,
+  "written_at_heal": 47312,
+  "indexed_at_heal": 3962,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 11.7372995,
+  "heal_seconds": 0.042919167,
+  "seconds_from_last_write_to_all_indexed": 4.6294725,
+  "indexer_indexed_counter_delta": 56038,
+  "indexer_counter_reset_by_restart": true,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-crash-loop-indexer-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-crash-loop-indexer-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:52:11.632Z",
+    "last_indexed_at": "2026-10-06T05:52:33.173Z",
+    "ingest_seconds": 21.541,
+    "ingest_lines_per_sec": 2785.3860080776194,
+    "latency": {
+      "p50_ms": 2333.5297539328344,
+      "p90_ms": 2640,
+      "p99_ms": 2682,
+      "max_ms": 2682
+    },
+    "zero_loss": true
+  }
+}

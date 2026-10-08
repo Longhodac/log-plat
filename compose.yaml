@@ -96,6 +96,9 @@ services:
     environment:
       KAFKA_BROKERS: kafka:9092
       OPENSEARCH_ADDRS: http://opensearch:9200
+      INDEX_PREFIX: ${INDEX_PREFIX:-logs}
+      INDEX_SHARDS: ${INDEX_SHARDS:-1}
+      INDEXER_BULK_WORKERS: ${INDEXER_BULK_WORKERS:-4}
 
   agent:
     <<: *go-service
@@ -109,6 +112,7 @@ services:
       AGENT_PATHS: /var/log/ingest/*.log
       COLLECTOR_ADDR: collector:7070
       AGENT_API_KEY: ${AGENT_API_KEY:-dev-agent-key}
+      AGENT_BATCH_LINGER: ${AGENT_BATCH_LINGER:-200ms}
     volumes:
       - ./data/run:/var/log/ingest:ro
       - agent-state:/var/lib/logplat-agent

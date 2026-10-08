@@ -1,0 +1,8 @@
+# date: 2026-10-06T04:03:52Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs; load at start: 4.77 10.82 9.71
+# docs: 1000000
+# duration=10s warmup=2s rounds=5
+# targets distinct.txt:   300000 lines, sha256 930b537cd048
+# targets pages.txt:       30 lines, sha256 e9f399ba46a9
+# targets repeat.txt:        1 lines, sha256 677383a231e4

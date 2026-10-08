@@ -1,0 +1,35 @@
+{
+  "scenario": "kill-indexer",
+  "lines": 60000,
+  "lines_per_sec_written": 3000,
+  "written_at_inject": 12001,
+  "indexed_at_inject": 2613,
+  "written_at_heal": 37531,
+  "indexed_at_heal": 2613,
+  "indexed_share_during_fault": 0,
+  "fault_seconds": 8.537563875,
+  "heal_seconds": 1.423071666,
+  "seconds_from_last_write_to_all_indexed": 3.160288333,
+  "indexer_indexed_counter_delta": 57387,
+  "indexer_counter_reset_by_restart": true,
+  "redundant_writes_absorbed": 0,
+  "zero_loss_report": {
+    "file": "/Users/long/fall-2026/Log-plat/data/run/chaos-kill-indexer-20261006T054551Z.log",
+    "source": "/var/log/ingest/chaos-kill-indexer-20261006T054551Z.log",
+    "expected": 60000,
+    "indexed_docs_for_source": 60000,
+    "missing": 0,
+    "unexpected": 0,
+    "first_observed_at": "2026-10-06T05:46:47.863Z",
+    "last_indexed_at": "2026-10-06T05:47:08.415Z",
+    "ingest_seconds": 20.552,
+    "ingest_lines_per_sec": 2919.4239003503308,
+    "latency": {
+      "p50_ms": 608.3601515000498,
+      "p90_ms": 932.8138672792774,
+      "p99_ms": 993,
+      "max_ms": 994
+    },
+    "zero_loss": true
+  }
+}

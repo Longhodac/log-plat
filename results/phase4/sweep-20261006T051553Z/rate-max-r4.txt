@@ -1,0 +1,43 @@
+# label: rate-max-r4  workers=4 shards=1 lines=1000000 rate=0
+# date: 2026-10-06T05:28:25Z
+# commit: f2218b4 (dirty)
+# host: Darwin arm64, 10 CPUs; load: 9.26 6.82 6.21
+# docker: 29.1.3, 10 CPUs, 8217448448 bytes
+$ loggen -in data/loghub/HDFS.log -out bench-rate-max-r4-1791264497.log -rate 0 -count 1000000  (via_volume=1)
+time="2026-10-06T01:28:25-04:00" level=warning msg="No services to build"
+time="2026-10-06T01:28:25-04:00" level=warning msg="No services to build"
+ Container logplat-loggen-run-e7afe6f98e19 Creating 
+ Container logplat-loggen-run-e7afe6f98e19 Created 
+wrote 1000000 lines (139779148 bytes) to /out/bench-rate-max-r4-1791264497.log in 359ms (2784810 lines/s)
+{"lines":1000000,"bytes":139779148,"elapsed_ns":359090875,"lines_per_sec":2784810.390963012,"out":"/out/bench-rate-max-r4-1791264497.log"}
+$ bin/zerolosscheck -file data/run/bench-rate-max-r4-1791264497.log -source /var/log/ingest/bench-rate-max-r4-1791264497.log -agent-id agent-1 -index-prefix bench-rate-max-r4 -json results/phase4/sweep-20261006T051553Z/rate-max-r4.json
+01:28:28 expecting 1000000 lines from data/run/bench-rate-max-r4-1791264497.log (source /var/log/ingest/bench-rate-max-r4-1791264497.log, agent agent-1)
+01:28:28 indexed 14604/1000000
+01:28:30 indexed 121161/1000000
+01:28:32 indexed 283463/1000000
+01:28:34 indexed 440452/1000000
+01:28:36 indexed 562824/1000000
+01:28:40 indexed 778502/1000000
+01:28:45 indexed 782129/1000000
+01:28:47 indexed 951523/1000000
+01:28:50 indexed 1000000/1000000
+{
+  "file": "data/run/bench-rate-max-r4-1791264497.log",
+  "source": "/var/log/ingest/bench-rate-max-r4-1791264497.log",
+  "expected": 1000000,
+  "indexed_docs_for_source": 1000000,
+  "missing": 0,
+  "unexpected": 0,
+  "first_observed_at": "2026-10-06T05:28:27.52Z",
+  "last_indexed_at": "2026-10-06T05:28:48.259Z",
+  "ingest_seconds": 20.739,
+  "ingest_lines_per_sec": 48218.33261005834,
+  "latency": {
+    "p50_ms": 6658.915380031849,
+    "p90_ms": 17011.620556732247,
+    "p99_ms": 17964,
+    "max_ms": 18121
+  },
+  "zero_loss": true
+}
+01:28:58 ZERO LOSS: all 1000000 lines indexed; 48218 lines/s from first read to last index

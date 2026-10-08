@@ -154,6 +154,9 @@ func TestPipelineEndToEndZeroLossAndQuery(t *testing.T) {
 	if !report.ZeroLoss || report.Expected != lines {
 		t.Fatalf("zero-loss report: %+v", report)
 	}
+	if l := report.Latency; l.P50 < 0 || l.P99 < l.P50 || l.Max < l.P99 || l.Max > 60_000 {
+		t.Errorf("latency percentiles are not ordered or not plausible for a local run: %+v", l)
+	}
 
 	keys, _ := apikey.Parse("q:ops")
 	api := httptest.NewServer((&query.Server{

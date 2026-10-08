@@ -105,7 +105,7 @@ make chaos         # takes about 9 minutes; saves raw output and a JSON report p
 make chaos-down
 ```
 
-All 17 passed with zero lines lost, in two full runs. The table, the runs behind it, and what the tests don't cover are in [results/README.md](results/README.md) and [docs/design.md](docs/design.md). The chaos tests are not part of CI because they need the full stack and take several minutes.
+All 17 passed with zero lines lost, in three full runs. The last one used the Phase 4 indexer default of 4 parallel bulk writers. The table, the runs behind it, and what the tests don't cover are in [results/README.md](results/README.md) and [docs/design.md](docs/design.md). The chaos tests are not part of CI because they need the full stack and take several minutes.
 
 ## Working on it
 
@@ -133,13 +133,32 @@ Every service reads its config from environment variables. Each `cmd/*/main.go` 
 
 ## Benchmark results
 
-Not filled in yet. That's Phase 4. For now, [results/](results/) has the raw output of the Phase 1 zero-loss replays and the Phase 2 chaos runs.
+All measured on one MacBook (10 CPUs), with the load generators on the same machine. The commands, raw output, and every caveat are in [results/README.md](results/README.md).
+
+| Measurement | Result |
+|---|---|
+| Ingest at full speed, default settings | about 70,000 lines/s (median of 13 runs, range 61,713 to 77,622), zero lost |
+| Ingest before parallel bulk writes | about 40,000 lines/s (5 runs) |
+| End-to-end latency at 5,000 to 40,000 lines/s | p50 20 to 117 ms, p99 154 to 450 ms |
+| Latency once offered load reaches capacity (60,000 lines/s) | p50 637 ms, p99 1.6 s, with a wide spread |
+| Repeated search, cache on against off | p50 0.37 ms against 8.7 ms at one client (about 22x the throughput) |
+| Search that never repeats | the cache does not help |
+
+"End-to-end" means the agent reading a line to the indexer starting its write. A line is searchable up to 5 s later, after OpenSearch refreshes.
+
+```bash
+make bench-up                                  # the stack with the benchmark overlay
+make bench-capacity                            # compare indexer and shard settings, 5 rounds
+make bench-sweep                               # latency at fixed offered loads, 5 rounds
+```
+
+Query benchmarks are `scripts/gen_query_targets.py` and `scripts/bench-query.sh`, described in the results README.
 
 ## What's next
 
 1. **Core pipeline (done).** Agent, collector, Kafka, indexer, query API, loggen, zero-loss checker, tests, and CI.
 2. **Chaos tests (done).** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
 3. **Redis (done).** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
-4. **Benchmarks.** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
+4. **Benchmarks (done).** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
 5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
 6. **Deployment.** A Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.
