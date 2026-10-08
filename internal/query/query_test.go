@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -253,6 +254,7 @@ func TestCacheKeyCoversEveryFilterTheLimitAndTheCursor(t *testing.T) {
 	seen := map[string]string{Key(base): "base"}
 	for name, q := range map[string]Query{
 		"service": {Service: "apache", Level: "info", Text: "x", Limit: 10},
+		"host":    {Service: "hdfs", Host: "checkout", Level: "info", Text: "x", Limit: 10},
 		"level":   {Service: "hdfs", Level: "warn", Text: "x", Limit: 10},
 		"text":    {Service: "hdfs", Level: "info", Text: "y", Limit: 10},
 		"limit":   {Service: "hdfs", Level: "info", Text: "x", Limit: 11},
@@ -310,5 +312,22 @@ func TestHandlerReportsCacheHitAndMiss(t *testing.T) {
 	}
 	if got := serveWith(t, c, nil, "/v1/logs?service=hdfs", "k").Header().Get("X-Cache"); got != "HIT" {
 		t.Errorf("second request X-Cache = %q, want HIT", got)
+	}
+}
+
+func TestHostFilterReachesTheSearchBody(t *testing.T) {
+	q, err := Parse(url.Values{"host": {" checkout "}, "service": {"otel-demo"}})
+	if err != nil || q.Host != "checkout" {
+		t.Fatalf("Parse = %+v, %v; want host trimmed to checkout", q, err)
+	}
+	body, err := Body(q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `{"term":{"host":"checkout"}}`) {
+		t.Errorf("search body %s lacks the host term filter", body)
+	}
+	if _, err := Parse(url.Values{"host": {strings.Repeat("h", 129)}}); err == nil {
+		t.Error("an over-long host was accepted")
 	}
 }

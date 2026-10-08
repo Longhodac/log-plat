@@ -1,0 +1,20 @@
+# live tail under a paced 5,000 lines/s replay of Loghub HDFS lines (100,000 lines, about 20 s), written inside Docker onto the agent's volume
+# three clients at once: fast = every event; filtered = events whose text contains 'allocateBlock'; slow = every event but sleeps 5 ms per event (about 200 events/s)
+# commit: 55e430b plus uncommitted Phase 5 changes; host: Darwin arm64; tail buffer 5000 events per client
+slow: received 3371 events, server reported 0 dropped; per-second: [0, 0, 0, 89, 163, 164, 163, 164, 166, 163, 165, 163, 166, 163, 165, 164, 166, 164, 161, 167, 164, 165, 166, 160]
+  first events: info  966761e7ec4e 081109 203518 143 INFO dfs.DataNode$DataXceiver: Receiving block blk_-1608999687919862906 
+fast: received 100000 events, server reported 0 dropped; per-second: [0, 0, 0, 6850, 5622, 4603, 5098, 4628, 4653, 5106, 6092, 4159, 5639, 4602, 5609, 4094, 5629, 4616, 5250, 5058, 4601, 5091, 3000, 0]
+  first events: info  966761e7ec4e 081109 203518 143 INFO dfs.DataNode$DataXceiver: Receiving block blk_-1608999687919862906 
+filtered: received 7940 events, server reported 0 dropped; per-second: [0, 0, 0, 773, 429, 354, 391, 349, 360, 389, 475, 321, 444, 353, 439, 309, 432, 350, 388, 395, 350, 404, 235, 0]
+  first events: info  966761e7ec4e 081109 203518 35 INFO dfs.FSNamesystem: BLOCK* NameSystem.allocateBlock: /mnt/hadoop/mapre
+  first events: info  966761e7ec4e 081109 203520 26 INFO dfs.FSNamesystem: BLOCK* NameSystem.allocateBlock: /mnt/hadoop/mapre
+
+# tail service counters (since the service started about 30 s earlier)
+logplat_tail_clients 0
+logplat_tail_events_delivered_total 124444
+logplat_tail_events_dropped_total 83496
+logplat_tail_records_consumed_total 100000
+
+# agent read to tail service (histogram quantiles are approximate)
+stage                                          samples   mean ms   p50 ms   p99 ms
+logplat_tail_delivery_seconds                   100000      91.6    112.0    273.5

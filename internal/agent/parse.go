@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -65,6 +66,9 @@ var levelWords = map[string]logplatv1.Level{
 	"FATAL":    logplatv1.Level_LEVEL_FATAL,
 	"CRIT":     logplatv1.Level_LEVEL_FATAL,
 	"CRITICAL": logplatv1.Level_LEVEL_FATAL,
+	"FAIL":     logplatv1.Level_LEVEL_ERROR, // .NET console logger
+	"DBUG":     logplatv1.Level_LEVEL_DEBUG,
+	"TRCE":     logplatv1.Level_LEVEL_TRACE,
 	"EMERG":    logplatv1.Level_LEVEL_FATAL,
 	"ALERT":    logplatv1.Level_LEVEL_FATAL,
 }
@@ -75,6 +79,11 @@ const levelScanTokens = 8
 
 // ParseLevel finds the first severity keyword among the leading tokens.
 func ParseLevel(line string) logplatv1.Level {
+	if strings.HasPrefix(line, "{") {
+		if l, ok := jsonLevel(line); ok {
+			return l
+		}
+	}
 	for i, tok := range strings.Fields(line) {
 		if i >= levelScanTokens {
 			break
@@ -85,4 +94,24 @@ func ParseLevel(line string) logplatv1.Level {
 		}
 	}
 	return logplatv1.Level_LEVEL_UNSPECIFIED
+}
+
+var jsonLevelKeys = []string{"level", "severity", "severity_text", "severityText", "lvl", "levelname", "log.level"}
+
+// jsonLevel reads the severity out of a structured log line such as
+// {"level":"error","msg":"..."}. It returns ok=false when the line is not JSON
+// or has no recognizable severity field, and the caller falls back to scanning.
+func jsonLevel(line string) (logplatv1.Level, bool) {
+	var m map[string]any
+	if json.Unmarshal([]byte(line), &m) != nil {
+		return 0, false
+	}
+	for _, k := range jsonLevelKeys {
+		if s, ok := m[k].(string); ok {
+			if l, ok := levelWords[strings.ToUpper(strings.TrimSpace(s))]; ok {
+				return l, true
+			}
+		}
+	}
+	return 0, false
 }

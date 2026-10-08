@@ -30,6 +30,9 @@ func Body(q Query) ([]byte, error) {
 	if q.Service != "" {
 		filters = append(filters, map[string]any{"term": map[string]any{"service": q.Service}})
 	}
+	if q.Host != "" {
+		filters = append(filters, map[string]any{"term": map[string]any{"host": q.Host}})
+	}
 	if q.Level != "" {
 		filters = append(filters, map[string]any{"term": map[string]any{"level": q.Level}})
 	}

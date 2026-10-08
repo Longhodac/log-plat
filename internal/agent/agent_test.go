@@ -28,6 +28,7 @@ import (
 type memPublisher struct {
 	mu        sync.Mutex
 	ids       map[string]int
+	entries   []*logplatv1.LogEntry
 	failFirst atomic.Int32
 }
 
@@ -39,6 +40,7 @@ func (p *memPublisher) Publish(_ context.Context, entries []*logplatv1.LogEntry)
 	defer p.mu.Unlock()
 	for _, e := range entries {
 		p.ids[e.GetId()]++
+		p.entries = append(p.entries, e)
 	}
 	return func() error { return nil }
 }

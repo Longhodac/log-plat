@@ -1,0 +1,22 @@
+# the OpenTelemetry demo (core services, 20 containers) shipped through the platform; a real fault is injected with the demo's cartFailure flag
+# load generator raised to 250 users (POST /loadgen/swarm) about 2.5 minutes before the fault. agent-docker tails the demo's Docker logs (label com.docker.compose.project=opentelemetry-demo); logs are stored as service otel-demo with the container name in host
+# alerter: window 30s, baseline 3m, min errors 15, ratio 4, cooldown 60s (the thresholds were not changed after seeing results). Slack is a LOCAL STUB; nothing was sent to real Slack. Stub times are local (UTC-4).
+# commit: 55e430b plus uncommitted Phase 5 changes; host: Darwin arm64
+# errors counted by the alerter before the fault: logplat_alerter_errors_observed_total{service="otel-demo"} 213 
+22:35:55Z  cartFailure -> 100%
+22:37:05Z  cartFailure -> off
+22:38:20Z  done
+
+# what the Slack stub received (local time):
+18:36:27 POST /services/T000/B000/DEMO-ONLY-NOT-A-REAL-TOKEN -> {"text": ":rotating_light: *Error spike in `otel-demo`*\n40 errors in the last 30s (usually about 9).\nMost recent:\n• `      Error status code 'FailedPrecondition' with detail 'Can't access cart storage. System.ApplicationException: Wasn't able to connect to redis`\n• `fail: cart.cartstore.ValkeyCartStore[2076027740]`\n• `      Error status code 'FailedPrecondition' with detail 'Can't access cart storage. System.ApplicationException: Wasn't able to connect to redis`"}
+18:37:37 POST /services/T000/B000/DEMO-ONLY-NOT-A-REAL-TOKEN -> {"text": ":white_check_mark: *Errors back to normal in `otel-demo`* (5 in the last 30s)"}
+
+# a live tail of error entries from the cart container while the fault was on:
+live-errors: received 120 events, server reported 0 dropped; per-second: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 4, 0, 0, 2, 4, 0, 0, 2, 0, 2, 2, 0, 0, 4, 0, 0, 2, 0, 0, 0, 6, 6, 2, 0, 0, 0, 0, 6, 8, 4, 0, 4, 4, 2, 2, 4, 2, 0, 4, 2, 2, 0, 
+  first events: error cart       fail: cart.cartstore.ValkeyCartStore[2076027740]
+  first events: error cart             Error status code 'FailedPrecondition' with detail 'Can't access cart storage. Syste
+
+# alerter counters
+logplat_alerter_alerts_total{kind="firing",outcome="sent"} 1
+logplat_alerter_alerts_total{kind="resolved",outcome="sent"} 1
+logplat_alerter_errors_observed_total{service="otel-demo"} 364

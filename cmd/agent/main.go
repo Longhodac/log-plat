@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -38,6 +39,12 @@ func run(ctx context.Context, log *slog.Logger) error {
 		PollInterval:      env.Duration("AGENT_POLL_INTERVAL", 100*time.Millisecond),
 		DrainTimeout:      env.Duration("AGENT_DRAIN_TIMEOUT", 10*time.Second),
 	}
+	format, ok := agent.ParseFormat(env.String("AGENT_FORMAT", "text"))
+	if !ok {
+		return fmt.Errorf("AGENT_FORMAT must be text or docker-json")
+	}
+	cfg.Format = format
+	cfg.DockerLabel = env.String("AGENT_DOCKER_LABEL", "")
 	addr := env.String("COLLECTOR_ADDR", "localhost:7070")
 	key := env.Required("AGENT_API_KEY")
 	admin := env.String("ADMIN_ADDR", ":9100")

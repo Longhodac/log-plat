@@ -10,8 +10,7 @@ A distributed log platform in Go. Data flows agent → collector (gRPC) → Kafk
 
 - **Explain every major design decision in docs/design.md.** Cover delivery guarantees, idempotency, and offset handling especially. When a change alters one of these, update the matching section in the same change. Write each section as the decision, the reason, and the cost.
 - **Never report a benchmark number without the command and the raw output that produced it.** Save results to the committed `results/` directory. Each file starts with the command, the commit, and the host. `scripts/e2e.sh` and `make bench` do this already. Name the limiter when you report a number, and say how many runs it is.
-- **Keep later phases out of scope until the user asks for them.** Phases 1 (core pipeline), 2 (chaos tests), 3 (Redis), and 4 (load benchmarks) are done. Do not start any of these unprompted:
-  - Phase 5: live tail, alerting, and the OpenTelemetry demo.
+- **Keep later phases out of scope until the user asks for them.** Phases 1 (core pipeline), 2 (chaos tests), 3 (Redis), 4 (load benchmarks), and 5 (live tail, alerting, Docker logs) are done. Do not start any of these unprompted:
   - Phase 6: Helm, kind, and AWS on EC2.
 
 ## Invariants that must hold
@@ -23,6 +22,9 @@ A distributed log platform in Go. Data flows agent → collector (gRPC) → Kafk
 - A chaos scenario must prove its fault took effect (hard outages stall indexing, redelivery scenarios absorb redundant writes). A scenario that can pass without disrupting anything is a bug.
 - Redis is never a reason the pipeline stops. The limiter and the cache fail open, and the collector slows an over-quota service instead of rejecting it.
 - Before trusting a benchmark number, confirm the work happened and name the limiter. Phase 4 produced four convincing wrong results (overlapping workers, a bind mount that delivers a growing file in bursts, carry-over between runs, a reused file name). Paced-load runs must write the log inside Docker (`VIA_VOLUME=1`), and each run needs a fresh indexer and a settle.
+- The tail is best effort and the alerter is advisory. Neither may ever slow or stop the pipeline: the tail reads Kafka with no group and drops events for a slow client, and the alerter is a separate consumer group.
+- An agent that tails Docker logs must be limited by `AGENT_DOCKER_LABEL`, or it ships the platform's own logs back into itself.
+- Never send an alert to a real Slack channel from a test or demo without being asked. Use a local stub. The webhook URL is a secret and must not appear in errors, logs, or the repository.
 - When moving or deleting result files, name each file. A glob once swept up committed Phase 1 results.
 - The agent (`internal/agent`) and the zero-loss checker (`internal/zeroloss`) frame lines through the same `internal/lineio.Framer`.
 
@@ -50,6 +52,7 @@ make down               # stop the stack and delete its volumes
 
 - `cmd/<service>`: one main package per binary. Each wires config from environment variables and calls into `internal/`.
 - `internal/`: all logic. Each package has unit tests next to it.
+- `internal/tail`, `internal/alert`: the live tail (SSE) and the error-spike detector with its Slack notifier. `cmd/tail` and `cmd/alerter` run them.
 - `chaos/`: fault-injection tests behind the `chaos` build tag. They drive the running Compose stack with `docker compose kill` and Toxiproxy. They are not part of CI.
 - `integration/`: tests behind the `integration` build tag that run against real Kafka and OpenSearch containers.
 - `proto/` holds the protobuf definitions. `gen/` holds the generated code, which is committed. CI fails if `gen/` is stale.

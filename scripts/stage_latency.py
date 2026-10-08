@@ -18,6 +18,7 @@ import urllib.request
 SOURCES = {
     9103: ["logplat_agent_ack_seconds", "logplat_agent_spool_append_seconds"],
     9101: ["logplat_collector_agent_dwell_seconds", "logplat_collector_publish_seconds"],
+    8082: ["logplat_tail_delivery_seconds"],
     9102: ['logplat_indexer_phase_seconds{phase="poll"}', 'logplat_indexer_phase_seconds{phase="process"}', 'logplat_indexer_phase_seconds{phase="commit"}', "logplat_indexer_kafka_dwell_seconds", "logplat_indexer_bulk_seconds", "logplat_indexer_end_to_end_seconds"],
 }
 

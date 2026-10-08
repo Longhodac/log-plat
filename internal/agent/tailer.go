@@ -36,6 +36,7 @@ type tailer struct {
 	readSize int
 	log      *slog.Logger
 	now      func() time.Time
+	format   Format
 }
 
 func inode(fi os.FileInfo) uint64 {
@@ -147,7 +148,21 @@ func (t *tailer) frame(fr *lineio.Framer, p []byte, st FileState, flush bool) ch
 	c := chunk{source: t.path}
 	emit := func(l lineio.Line) {
 		text := strings.ToValidUTF8(string(l.Text), "�")
-		ts, ok := ParseTimestamp(text, now)
+		var ts time.Time
+		var ok bool
+		if t.format == FormatDockerJSON {
+			var msg string
+			if msg, ts, ok = parseDockerLine(text); ok {
+				if msg == "" {
+					return // a blank line in the container's output
+				}
+				text = msg
+				ok = !ts.IsZero()
+			}
+		}
+		if !ok {
+			ts, ok = ParseTimestamp(text, now)
+		}
 		if !ok {
 			ts = now
 		}

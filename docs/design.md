@@ -111,6 +111,42 @@ Each service handles SIGTERM:
 - The indexer finishes and commits its current batch.
 - The query API drains its HTTP connections.
 
+## Live tail, alerting, and Docker logs (Phase 5)
+
+### Live tail
+
+**Decision.** `GET /v1/tail` streams entries as Server-Sent Events (SSE), from a separate `tail` service that reads Kafka directly. Filters are `service`, `host`, `level` (each comma-separated) and `q` (a case-insensitive substring of the message).
+
+**Why SSE, not WebSockets.** A tail is one-way. SSE is plain HTTP, so it works with `curl`, passes through ordinary proxies, and the browser reconnects by itself. WebSockets would add a handshake, framing, and ping handling for a direction of traffic the tail never uses. The cost is that a browser's `EventSource` cannot set the `X-API-Key` header, so a browser client needs `fetch` streaming or a small proxy that adds the key. I did not put the key in the URL, because URLs end up in logs.
+
+**Why Kafka, not OpenSearch.** Reading the topic gives delivery within about 100 ms of the agent's read (p50 112 ms, p99 274 ms at 5,000 lines/s, from a histogram, so approximate). Polling OpenSearch would add its refresh interval (up to 5 s) and put query load on the search cluster. The tail consumer joins no group and commits nothing, and it starts at the end of the topic. Every tail instance therefore sees every record, nothing about the tail can hold up the indexer, and a restarted tail simply starts from now.
+
+**Best effort, on purpose.** The tail is not durable. It shows entries from the moment a client connects, loses entries while no client is listening, and a client that reconnects can miss the gap. For history, use search. Making it durable would mean tracking each client's position, which is the work Kafka consumer groups already do and is not what a tail is for.
+
+**Slow clients.** Every client has a buffer (`TAIL_CLIENT_BUFFER`, 5,000 events). When it is full, new events for that client are dropped and counted, and the client is told with an `event: dropped` message. A single shared consumer cannot wait for the slowest reader. With one slow client and two normal ones connected, the normal clients received every event and all 83,496 drops fell on the slow one. The notice reaches a slow client late, because it travels behind the events still waiting in the socket, so the server's `logplat_tail_events_dropped_total` is the reliable count. A buffer of 1,000 was too small. Kafka delivers records in bursts of several thousand, and even a client that kept up on average lost about 3% of events when one burst arrived faster than it could drain. The cost of 5,000 is about 1.5 MB per client, bounded by `TAIL_MAX_CLIENTS` (100). Past that limit the service answers 503 with `Retry-After`. The tail reads Kafka without the collector's validation, so an entry's `id` is sent as an SSE field only when it is a well-formed log ID. A crafted record with a newline in its ID cannot inject fields into a client's stream, and a test covers it.
+
+### Error-spike alerting
+
+**Decision.** The `alerter` service is a Kafka consumer-group member that counts error and fatal entries per service and sends a Slack message when a service's errors in the last window reach both `ALERT_MIN_ERRORS` and `ALERT_RATIO` times its usual count for a window.
+
+**Why per service works without coordination.** The collector keys records by service, so one service's entries all sit in one partition and reach exactly one alerter instance. Each instance can count its services' errors on its own, and the group spreads services across instances. This is a use of the partitioning decision made in Phase 1, not a new mechanism.
+
+**Why a ratio and a minimum.** A fixed threshold alerts on a noisy service all day and misses a quiet one. Comparing against the service's own recent history fixes the first, and the minimum count keeps a service that normally logs nothing from alerting on two errors. After a spike, the spike itself joins the baseline, so the bar for the next alert rises, which is what stops a flapping service from paging repeatedly.
+
+**One alert per incident.** A service is in one of two states. It sends a "spike" message once when it enters the firing state, nothing while it stays there, and one "back to normal" message when its window count falls below half of `ALERT_MIN_ERRORS`. A cooldown (`ALERT_COOLDOWN`) stops a new alert right after a resolve. In the integration test, a spike that continues for several seconds sends exactly one message, then exactly one all-clear.
+
+**Event time, not arrival time.** Errors are bucketed by the entry's `observed_at`. Replaying an old file does not look like old errors arriving now, entries older than the look-back are ignored (so catching up on a backlog after a restart raises no stale alerts), and entries stamped in the future are counted as happening now.
+
+**What can go wrong, and what happens.** Detection state lives in memory, so a restart forgets the baseline and a service with a spike during downtime is missed. A rebalance moves a service to another instance, which starts with an empty baseline. Both are documented limits, and neither affects the pipeline, because the alerter is just another reader of Kafka. Slack failures are retried (network errors, 5xx, and 429 with `Retry-After`) and a 4xx such as a revoked webhook is not. Errors from sending never contain the webhook URL, because the URL is a secret. A queue of 64 decouples sending from detection, so a slow webhook cannot stall counting. Log text is escaped before it goes into Slack, so a log line containing `<!channel>` cannot ping the workspace. Messages carry up to `ALERT_SAMPLES` recent error lines, which can contain sensitive data, so set it to 0 if that matters.
+
+### Docker container logs as a source
+
+**Decision.** The agent has a second input format, `AGENT_FORMAT=docker-json`, for Docker's json-file logs. It unwraps `{"log":...,"time":...}`, uses the `time` field as the event time, reads the severity from JSON fields (`level`, `severity`, and similar) or the first words of the line, and labels each entry's `host` with the container name from `config.v2.json`. The log IDs are unchanged: they still come from the file path and the byte offset, so every delivery guarantee above applies as is.
+
+**The filter that matters.** An agent that tails every container on a host would tail this platform's own containers, and every line the collector logs would be shipped, logged again, and shipped again. `AGENT_DOCKER_LABEL=key=value` restricts it to containers carrying a label, and `compose.otel.yaml` uses the Compose project label of the demo. A test checks that an unlabeled container's logs are never shipped.
+
+**Service name.** The collector stamps the service from the API key, so the demo's logs are stored under `otel-demo` with the container name in `host`. Search and tail both filter on `host`.
+
 ## Parallel bulk writes and what the benchmarks changed (Phase 4)
 
 **Decision.** The indexer splits each poll into `INDEXER_BULK_WORKERS` chunks and sends them to OpenSearch at once. It still commits offsets once, after every chunk is indexed or dead-lettered, so the rule from the indexer section is unchanged. The default is 4.

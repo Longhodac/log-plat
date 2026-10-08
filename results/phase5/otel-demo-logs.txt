@@ -1,0 +1,27 @@
+# what the pipeline collected from the OpenTelemetry demo (core services, 20 containers) by the end of the fault run
+# command: aggregation query on logs-* with service=otel-demo; commit 55e430b plus uncommitted Phase 5 changes
+documents stored as service otel-demo: 27990
+by level: {'unknown': 17779, 'info': 9776, 'fatal': 221, 'error': 192, 'warn': 22}
+containers seen: 18
+   cart               9352  {'unknown': 4676, 'info': 4530, 'error': 146}
+   frontend           6324  {'unknown': 6324}
+   otel-collector     3529  {'info': 3204, 'unknown': 300, 'error': 17, 'warn': 8}
+   image-provider     3076  {'unknown': 3076}
+   recommendation     1470  {'info': 1469, 'warn': 1}
+   shipping           1019  {'unknown': 1019}
+   ad                  645  {'unknown': 635, 'warn': 9, 'info': 1}
+   email               557  {'unknown': 556, 'info': 1}
+   payment             554  {'info': 549, 'unknown': 2, 'warn': 2, 'error': 1}
+   astronomy-db        516  {'unknown': 281, 'fatal': 221, 'error': 10, 'info': 3, 'warn': 1}
+   quote               359  {'unknown': 359}
+   telemetry-docs      223  {'unknown': 223}
+   load-generator      180  {'unknown': 162, 'error': 18}
+   frontend-proxy      135  {'unknown': 134, 'info': 1}
+   valkey-cart          23  {'unknown': 22, 'warn': 1}
+   flagd                22  {'info': 15, 'unknown': 7}
+   flagd-ui              3  {'info': 3}
+   product-catalog       3  {'unknown': 3}
+
+# collector counters for the same data
+logplat_collector_entries_total{result="published",service="otel-demo"} 28145
+logplat_collector_publish_errors_total 0

@@ -134,6 +134,37 @@ services:
       QUERY_RATE_BURST: ${QUERY_RATE_BURST:-100}
       QUERY_CACHE_TTL: ${QUERY_CACHE_TTL:-30s}
 
+  tail:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: tail } }
+    image: logplat/tail:dev
+    depends_on:
+      kafka: { condition: service_healthy }
+    ports:
+      - "8082:8082"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      TAIL_API_KEYS: ${TAIL_API_KEYS:-dev-tail-key:ops}
+
+  alerter:
+    <<: *go-service
+    build: { context: ., args: { SERVICE: alerter } }
+    image: logplat/alerter:dev
+    depends_on:
+      kafka: { condition: service_healthy }
+    ports:
+      - "9104:9100"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      # Empty means alerts are written to the log only. A real webhook URL is a
+      # secret, so pass it in the environment and never commit it.
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      ALERT_WINDOW: ${ALERT_WINDOW:-1m}
+      ALERT_BASELINE: ${ALERT_BASELINE:-10m}
+      ALERT_MIN_ERRORS: ${ALERT_MIN_ERRORS:-20}
+      ALERT_RATIO: ${ALERT_RATIO:-5}
+      ALERT_COOLDOWN: ${ALERT_COOLDOWN:-2m}
+
   prometheus:
     image: prom/prometheus:v3.15.0
     ports:

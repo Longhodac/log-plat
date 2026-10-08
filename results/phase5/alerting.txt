@@ -1,0 +1,15 @@
+# error-spike alert end to end: normal HDFS traffic at 2,000 lines/s for 70 s, plus an error burst of 400 lines at 20/s (20 s) starting 15 s in
+# alerter settings: window 20s, baseline 2m, min errors 20, ratio 5, cooldown 30s, evaluated every 5s. Slack is a LOCAL STUB on host port 8099; nothing was sent to real Slack.
+# commit: 55e430b plus uncommitted Phase 5 changes; host: Darwin arm64
+# started 22:15:26Z
+# finished 22:17:31Z
+
+# what the Slack stub received (UTC):
+18:15:46 POST /services/T000/B000/DEMO-ONLY-NOT-A-REAL-TOKEN -> {"text": ":rotating_light: *Error spike in `hdfs`*\n94 errors in the last 20s (usually about 0).\nMost recent:\n• `081109 203501 101 ERROR dfs.DataNode$DataXceiver: writeBlock blk_936318841857319752 received exception java.io.IOException: Connection reset by peer`\n• `081109 203501 102 ERROR dfs.DataNode$DataXceiver: writeBlock blk_282710052775708360 received exception java.io.IOException: Connection reset by peer`\n• `081109 203501 103 ERROR dfs.DataNode$DataXceiver: writeBlock blk_825161426733951664 received exception java.io.IOException: Connection reset by peer`"}
+18:16:21 POST /services/T000/B000/DEMO-ONLY-NOT-A-REAL-TOKEN -> {"text": ":white_check_mark: *Errors back to normal in `hdfs`* (0 in the last 20s)"}
+
+# alerter counters
+logplat_alerter_alerts_total{kind="firing",outcome="sent"} 1
+logplat_alerter_alerts_total{kind="resolved",outcome="sent"} 1
+logplat_alerter_errors_observed_total{service="hdfs"} 400
+logplat_alerter_services_tracked 1

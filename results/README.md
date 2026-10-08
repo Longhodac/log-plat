@@ -171,3 +171,42 @@ I changed the indexer's default to 4 parallel bulk writers, so I ran the full ch
 The first rerun ([20261006T054551Z](chaos/20261006T054551Z/run.txt)) failed one check and showed a flaw in my test, not in the pipeline. `net-collector-ack-loss` is meant to force duplicates, and it produced none in that run, so its own check failed. Zero loss held. I reran it 14 times with the old fault and it produced duplicates in 5 of 14 ([repeat-ack-loss-before-fix](chaos/repeat-ack-loss-before-fix/)). The first six runs used the original fault, a TCP reset after a fixed 700 ms. The next eight added a 300 ms delay on the acks and managed only 2 of 8. A reset only creates duplicates if some entries have reached Kafka while their ack is still on the way, and a timer cannot target that. The scenario now watches the collector's published count and the agent's acked count, and cuts the connection when the first is ahead. It then produced duplicates in 8 of 8 reruns, with 1,404 to 11,213 redundant writes and zero loss each time ([repeat-ack-loss-after-fix](chaos/repeat-ack-loss-after-fix/)). The final run above uses the fixed scenario.
 
 The stall check on hard outages and the duplicate check are unchanged. All of this is single runs on one machine, with the limits listed in the Phase 2 section above.
+
+## Phase 5: live tail, error alerts, and the OpenTelemetry demo
+
+Single runs on the same MacBook, with the `make bench-up` stack so paced load is written inside Docker (see the Phase 4 mistakes). Raw output is in [phase5/](phase5/). Every alert shown went to a local stub on the host, never to real Slack.
+
+### Live tail
+
+[live-tail.txt](phase5/live-tail.txt). A paced replay of 100,000 HDFS lines at 5,000 lines/s with three clients connected at once: a fast one (every event), a filtered one (`q=allocateBlock`), and a slow one that sleeps 5 ms per event.
+
+| Client | Events received | Events dropped by the server |
+|---|---|---|
+| fast | 100,000 of 100,000 | 0 |
+| filtered | 7,940 | 0 |
+| slow (about 165 events/s) | 3,371 in 24 s | the remaining 83,496 |
+
+The server's counters add up: 100,000 records consumed, 124,444 events delivered, 83,496 dropped, and every drop belongs to the slow client. The slow client's own report says 0 dropped, because the `dropped` notice travels behind the events still waiting in its socket and it stopped reading first. The server counter is the reliable one. From the agent reading a line to the tail service holding it, the delay was p50 112 ms and p99 274 ms (histogram quantiles, so approximate), and that includes the agent's 200 ms batch timer.
+
+**A buffer that was too small.** With a 1,000-event buffer per client, even the fast client lost 2.6% to 3% of events (two runs, in this file's history only), because Kafka delivers records in bursts of several thousand. The default is now 5,000. That is the setting these numbers use.
+
+### Error-spike alerting on synthetic errors
+
+[alerting.txt](phase5/alerting.txt). Normal HDFS traffic at 2,000 lines/s plus a burst of 400 error lines at 20/s. The alerter sent one spike message 20 s after the burst began (94 errors in the window, usually about 0), nothing during the remaining burst, and one all-clear about 35 s after the errors stopped. It counted all 400 errors. These thresholds were chosen for a quick demo (window 20 s, baseline 2 m).
+
+### The OpenTelemetry demo as a log source
+
+The demo's core services (20 containers, its load generator running) shipped through a second agent that reads Docker's container logs. [otel-demo-logs.txt](phase5/otel-demo-logs.txt) shows what arrived: 27,990 documents from 18 containers in about 15 minutes, with the container name as `host` and the service as `otel-demo`. I checked the classification against the raw lines: the 221 "fatal" entries are PostgreSQL's own `FATAL: role "root" does not exist`, raised by the demo's health check, and the errors from the demo's own collector failing to scrape its database. I did not run the zero-loss checker on this data, because the demo's logs are not a file I can replay, so I make no loss claim for it. The collector reported 28,145 entries published and 0 publish errors, and the 155 more than were indexed when I queried were still in flight while the demo kept logging.
+
+**A real fault, caught.** [otel-demo-fault.txt](phase5/otel-demo-fault.txt). I switched on the demo's `cartFailure` flag for 70 s with 250 simulated users. The alerter (window 30 s, baseline 3 m, minimum 15 errors, ratio 4) sent one spike message 32 s after the fault began (40 errors in the window, usually about 9, with real cart error text), and one all-clear about 32 s after it ended. A live tail filtered to the cart container streamed 120 errors during the fault. The thresholds were the same in an earlier attempt that did not alert.
+
+**The earlier attempts, kept honest.** Two runs found nothing, and both are informative.
+
+- With the `paymentFailure` flag and the demo's default load, the failure produced two warn lines in a minute and nothing else. The payment service logs the failure at warn level, and the load generator checked out only about twice. The checkout service wrote no stdout lines at all, so it must log through OpenTelemetry only. A reader of container logs cannot see logs a service sends by another route.
+- With `cartFailure` at 40 simulated users, the fault added about 57 errors in 70 s. That is roughly 25 per 30-second window against a bar of about four times the demo's own background noise, so the alerter correctly stayed quiet.
+
+I raised the load, not the sensitivity, for the run that alerted. The file in the repository is that run.
+
+### What these runs do not show
+
+One run of each. The alert latency (about 5 s on synthetic errors and about 32 s on the real fault) depends on the window and the evaluation interval (5 s), so it is mostly a setting, not a measurement. The tail was tested with at most three clients. The detector's memory and CPU at many services were not measured. The Slack integration was tested only against a local stub and an HTTP test server, not the real Slack API.

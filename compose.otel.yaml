@@ -1,0 +1,39 @@
+# Adds a second agent that ships the OpenTelemetry demo's container logs.
+#
+#   1. Start the demo (its own compose project, named opentelemetry-demo):
+#        git clone https://github.com/open-telemetry/opentelemetry-demo && cd opentelemetry-demo
+#        docker compose up -d        # the core services; about 3.5 GB of memory
+#   2. Start this platform with this overlay:
+#        docker compose -f compose.yaml -f compose.otel.yaml up -d --wait
+#
+# The agent reads Docker's json-file logs, which live inside Docker's VM, so it
+# mounts that directory read-only. Those files are root-owned, so this agent
+# runs as root. AGENT_DOCKER_LABEL limits it to the demo's containers. Without
+# that filter it would also tail this platform's own containers and ship their
+# logs back into the pipeline, forever.
+services:
+  agent-docker:
+    build: { context: ., args: { SERVICE: agent } }
+    image: logplat/agent:dev
+    user: "0:0"
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on: [collector]
+    environment:
+      AGENT_ID: agent-docker
+      AGENT_FORMAT: docker-json
+      AGENT_DOCKER_LABEL: ${OTEL_DOCKER_LABEL:-com.docker.compose.project=opentelemetry-demo}
+      AGENT_PATHS: /var/lib/docker/containers/*/*-json.log
+      COLLECTOR_ADDR: collector:7070
+      AGENT_API_KEY: ${OTEL_AGENT_API_KEY:-otel-agent-key}
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - agent-docker-state:/var/lib/logplat-agent
+
+  collector:
+    environment:
+      # The key decides the service name a log is stored under.
+      COLLECTOR_API_KEYS: ${COLLECTOR_API_KEYS:-dev-agent-key:hdfs,otel-agent-key:otel-demo}
+
+volumes:
+  agent-docker-state:

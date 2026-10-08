@@ -82,6 +82,8 @@ For the next page, pass the response's `next_cursor` back as `cursor=` and keep 
 | Collector metrics | http://localhost:9101/metrics |
 | Indexer metrics | http://localhost:9102/metrics |
 | Agent metrics | http://localhost:9103/metrics |
+| Live tail | http://localhost:8082/v1/tail |
+| Alerter metrics | http://localhost:9104/metrics |
 | Kafka (from the host) | localhost:9094 |
 
 `make down` stops everything and deletes the volumes.
@@ -94,6 +96,18 @@ Redis does two jobs, and both are off until you set them.
 - **Query API.** `QUERY_RATE_LIMIT` allows each API key that many requests per second and answers `429` with `Retry-After` beyond it. `QUERY_CACHE_TTL` caches search results, so repeating a search returns `X-Cache: HIT`. A cached page can be up to the TTL old.
 
 Compose turns on the query limit (50/s) and the 30 s cache, and leaves the collector unlimited so replay benchmarks stay meaningful. If Redis goes down, requests go through unlimited and uncached. Details and the trade-offs are in [docs/design.md](docs/design.md).
+
+## Live tail, alerts, and Docker logs
+
+```bash
+curl -N -H 'X-API-Key: dev-tail-key' 'localhost:8082/v1/tail?service=hdfs&level=error,warn&q=timeout'
+```
+
+`tail` streams new entries as Server-Sent Events, filtered by `service`, `host`, `level` and `q`. It reads Kafka directly, so a line shows up about 100 ms after the agent reads it. It is best effort. A client sees entries from the moment it connects, and a client too slow to keep up loses entries and is told how many. Use search for history.
+
+`alerter` watches for error spikes. When a service's errors in the last minute reach both a minimum count and several times its own usual count, it sends one Slack message, nothing while the spike lasts, and one message when it ends. With `SLACK_WEBHOOK_URL` unset, alerts go to the log only. Set the webhook as an environment variable and never commit it.
+
+The agent can also ship Docker container logs (`AGENT_FORMAT=docker-json`), filtered to containers with a given label. `compose.otel.yaml` uses that to monitor the [OpenTelemetry demo](https://github.com/open-telemetry/opentelemetry-demo). Each demo container's logs are stored under the service `otel-demo` with the container name as `host`. I ran it for real, injected a fault with the demo's cart failure flag, and the alerter caught it. See [results/README.md](results/README.md) for what worked and what did not.
 
 ## Break it on purpose
 
@@ -160,5 +174,5 @@ Query benchmarks are `scripts/gen_query_targets.py` and `scripts/bench-query.sh`
 2. **Chaos tests (done).** Kill the collector, Kafka, and the indexer mid-stream, break the network with Toxiproxy, and check that nothing is lost.
 3. **Redis (done).** Cache repeated queries, and rate-limit each API key with a token bucket at both the collector and the query API.
 4. **Benchmarks (done).** Measure ingest logs per second, end-to-end latency (p50 and p99), and query latency.
-5. **Live tail and alerts.** Stream logs over WebSockets or SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
+5. **Live tail and alerts (done).** Stream logs over SSE, send error-spike alerts to Slack, and ingest logs from the OpenTelemetry demo app.
 6. **Deployment.** A Helm chart tested on kind, then self-managed EC2 on AWS, with a teardown script and billing alerts.

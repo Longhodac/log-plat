@@ -28,6 +28,13 @@ type Config struct {
 	AgentID string
 	Host    string
 	Paths   []string // glob patterns
+	// Format is how each line is read. Empty means plain text.
+	Format Format
+	// DockerLabel, with the docker-json format, limits the agent to containers
+	// that carry this "key=value" label. Without it the agent would tail every
+	// container on the host, including this platform's own, and feed their logs
+	// back into itself.
+	DockerLabel string
 
 	StateDir          string
 	SpoolMaxBytes     int64
@@ -56,6 +63,9 @@ func (c *Config) Defaults() {
 		if *v <= 0 {
 			*v = d
 		}
+	}
+	if c.Format == "" {
+		c.Format = FormatText
 	}
 	set(&c.BatchMaxEntries, 1000)
 	set(&c.BatchMaxBytes, 1<<20)
@@ -197,13 +207,18 @@ func (a *Agent) housekeep() (stop func()) {
 func (a *Agent) discover(ctx context.Context, out chan<- chunk, wg *sync.WaitGroup) {
 	var mu sync.Mutex
 	active := map[string]bool{}
-	host := a.cfg.Host
+	skipped := map[string]bool{} // container logs that failed the label check; labels never change
 	scan := func() {
 		for _, pattern := range a.cfg.Paths {
 			matches, _ := filepath.Glob(pattern)
 			for _, path := range matches {
 				mu.Lock()
-				if active[path] {
+				if active[path] || skipped[path] {
+					mu.Unlock()
+					continue
+				}
+				if a.cfg.Format == FormatDockerJSON && !matchesLabel(path, a.cfg.DockerLabel) {
+					skipped[path] = true
 					mu.Unlock()
 					continue
 				}
@@ -211,8 +226,12 @@ func (a *Agent) discover(ctx context.Context, out chan<- chunk, wg *sync.WaitGro
 				mu.Unlock()
 
 				start, _ := a.reg.Get(path)
+				host := a.cfg.Host
+				if a.cfg.Format == FormatDockerJSON {
+					host = containerName(path)
+				}
 				t := &tailer{
-					path: path, agentID: a.cfg.AgentID, host: host, start: start, out: out,
+					path: path, agentID: a.cfg.AgentID, host: host, start: start, out: out, format: a.cfg.Format,
 					poll: a.cfg.PollInterval, readSize: a.cfg.ReadSize, log: a.log, now: a.now,
 				}
 				wg.Add(1)

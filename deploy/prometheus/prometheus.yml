@@ -11,3 +11,7 @@ scrape_configs:
     static_configs: [{ targets: ["indexer:9100"] }]
   - job_name: query-api
     static_configs: [{ targets: ["query-api:8080"] }]
+  - job_name: tail
+    static_configs: [{ targets: ["tail:8082"] }]
+  - job_name: alerter
+    static_configs: [{ targets: ["alerter:9100"] }]

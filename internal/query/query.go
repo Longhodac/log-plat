@@ -26,6 +26,7 @@ const (
 // Query is a validated search request.
 type Query struct {
 	Service string
+	Host    string
 	Level   string
 	Text    string
 	From    time.Time // inclusive; zero means unbounded
@@ -63,11 +64,15 @@ func (e *FieldError) Error() string { return e.Field + ": " + e.Reason }
 func Parse(v url.Values) (Query, error) {
 	q := Query{
 		Service: strings.TrimSpace(v.Get("service")),
+		Host:    strings.TrimSpace(v.Get("host")),
 		Text:    strings.TrimSpace(v.Get("q")),
 		Limit:   DefaultLimit,
 	}
 	if len(q.Service) > maxService {
 		return q, &FieldError{"service", fmt.Sprintf("must be at most %d characters", maxService)}
+	}
+	if len(q.Host) > maxService {
+		return q, &FieldError{"host", fmt.Sprintf("must be at most %d characters", maxService)}
 	}
 	if len(q.Text) > maxTextLen {
 		return q, &FieldError{"q", fmt.Sprintf("must be at most %d characters", maxTextLen)}
@@ -119,7 +124,7 @@ type cursor struct {
 // cursor with different filters would silently return the wrong page.
 func (q Query) fingerprint() string {
 	h := sha256.Sum256([]byte(strings.Join([]string{
-		q.Service, q.Level, q.Text, q.From.Format(time.RFC3339Nano), q.To.Format(time.RFC3339Nano),
+		q.Service, q.Host, q.Level, q.Text, q.From.Format(time.RFC3339Nano), q.To.Format(time.RFC3339Nano),
 	}, "\x00")))
 	return hex.EncodeToString(h[:8])
 }
