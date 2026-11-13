@@ -1,0 +1,25 @@
+name: CodeNib Wiki
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  wiki:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.wiki.outputs.page-url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: sysevol-ai/wiki-action@v1
+        id: wiki
+        with:
+          api-key: ${{ secrets.OPENROUTER_API_KEY }}
